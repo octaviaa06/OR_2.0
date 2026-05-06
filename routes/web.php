@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AbsensiController;
 use App\Http\Controllers\Admin\PerizinanController;
 use App\Http\Controllers\Admin\KalenderController;
 use App\Http\Controllers\Guru\GuruDashboardController;
+use App\Http\Controllers\Guru\AbsensiController as GuruAbsensiController;
 use App\Http\Controllers\LogoutController;
 
 Route::get('/logout-confirm', [LogoutController::class, 'show'])->name('logout.confirm');
@@ -61,4 +62,9 @@ Route::middleware(['auth.check', 'role:guru'])->prefix('guru')->name('guru.')->g
     // API Endpoints untuk AJAX
     Route::put('/izin/update', [GuruDashboardController::class, 'updateIzinStatus'])->name('izin.update');
     Route::get('/izin/refresh', [GuruDashboardController::class, 'refreshIzin'])->name('izin.refresh');
+
+    // Absensi
+    Route::get('/absensi', [GuruAbsensiController::class, 'index'])->name('absensi.index');
+    Route::post('/absensi/simpan', [GuruAbsensiController::class, 'simpan'])->name('absensi.simpan');
+    Route::post('/absensi/export', [GuruAbsensiController::class, 'exportData'])->name('absensi.export');
 });
