@@ -1,0 +1,39 @@
+/* Sidebar Guru */
+.sidebar {
+    transition: all 0.3s ease;
+}
+
+.sidebar-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    position: fixed;
+    top: 15px; left: 15px;
+    z-index: 1050;
+}
+.sidebar-toggle span {
+    display: block; width: 24px; height: 2px;
+    background: #0d6efd; border-radius: 2px;
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1040;
+}
+
+@media (max-width: 768px) {
+    .sidebar-toggle { display: flex; }
+    #sidebar {
+        position: fixed; left: -250px; top: 0;
+        z-index: 1045;
+        transition: left 0.3s ease;
+    }
+    #sidebar.open { left: 0; }
+    .sidebar-overlay.show { display: block; }
+}
