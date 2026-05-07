@@ -28,7 +28,21 @@ class PerizinanController extends Controller
                 'siswa.nama_siswa',
                 'siswa.kelas',
             ])
-            ->map(fn($i) => (array) $i)
+            ->map(function ($i) {
+                $arr = (array) $i;
+                // Generate tanggal_range dari tanggal_mulai + tanggal_selesai
+                $mulai   = $arr['tanggal_mulai'] ?? '';
+                $selesai = $arr['tanggal_selesai'] ?? '';
+                if ($mulai && $selesai && $mulai !== $selesai) {
+                    $arr['tanggal_range'] = date('d/m/Y', strtotime($mulai))
+                        . ' - ' . date('d/m/Y', strtotime($selesai));
+                } elseif ($mulai) {
+                    $arr['tanggal_range'] = date('d/m/Y', strtotime($mulai));
+                } else {
+                    $arr['tanggal_range'] = '-';
+                }
+                return $arr;
+            })
             ->toArray();
 
         return view('admin.perizinan.index', compact('perizinanList'));

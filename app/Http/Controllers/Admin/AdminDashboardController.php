@@ -21,6 +21,7 @@ class AdminDashboardController extends Controller
             ->orderBy('tanggal')
             ->limit(5)
             ->get()
+            ->map(fn($a) => (array) $a)
             ->toArray();
 
         $izin = $this->getIzinMenunggu();
