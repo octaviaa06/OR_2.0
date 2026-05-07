@@ -5,14 +5,20 @@
     <nav class="p-3">
         <ul class="nav flex-column gap-1">
             <li class="nav-item">
-                <!-- <a href="{{ route('guru.dashboard') }}" class="nav-link text-dark fw-semibold active"> -->
-                <a href="{{ route('guru.dashboard') }}" class="nav-link {{ request()->routeIs('guru.dashboard') ? 'active' : '' }}">
+                <a href="{{ route('guru.dashboard') }}"
+                   class="nav-link {{ request()->routeIs('guru.dashboard') ? 'active' : '' }}">
                     🏠 Dashboard
                 </a>
             </li>
             <li class="nav-item">
-                <!-- <a href="{{ route('guru.absensi.index') }}" class="nav-link text-dark"> -->
-                <a href="{{ route('guru.absensi.index') }}" class="nav-link {{ request()->routeIs('guru.absensi.*') ? 'active' : '' }}">
+                <a href="{{ route('guru.siswa.index') }}"
+                   class="nav-link {{ request()->routeIs('guru.siswa.*') ? 'active' : '' }}">
+                    👨‍🎓 Data Murid
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('guru.absensi.index') }}"
+                   class="nav-link {{ request()->routeIs('guru.absensi.*') ? 'active' : '' }}">
                     📋 Absensi
                 </a>
             </li>

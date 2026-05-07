@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AbsensiController;
 use App\Http\Controllers\Admin\PerizinanController;
 use App\Http\Controllers\Admin\KalenderController;
 use App\Http\Controllers\Guru\GuruDashboardController;
+use App\Http\Controllers\Guru\SiswaController as GuruSiswaController;
 use App\Http\Controllers\Guru\AbsensiController as GuruAbsensiController;
 use App\Http\Controllers\LogoutController;
 
@@ -58,6 +59,9 @@ Route::middleware(['auth.check', 'role:guru'])->prefix('guru')->name('guru.')->g
 
     // Dashboard
     Route::get('/dashboard', [GuruDashboardController::class, 'index'])->name('dashboard');
+
+    // Data Siswa (read-only)
+    Route::get('/siswa', [GuruSiswaController::class, 'index'])->name('siswa.index');
 
     // API Endpoints untuk AJAX
     Route::put('/izin/update', [GuruDashboardController::class, 'updateIzinStatus'])->name('izin.update');
