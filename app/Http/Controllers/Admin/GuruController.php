@@ -4,121 +4,68 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
 
 class GuruController extends Controller
 {
-    protected string $apiBase;
-    protected string $apiGuru;
-    protected string $apiAkun;
-
-    public function __construct()
-    {
-        $this->apiBase = env('API_BASE_URL', 'https://ortuconnect.pbltifnganjuk.com/api');
-        $this->apiGuru = $this->apiBase . '/admin/data_guru.php';
-        $this->apiAkun = $this->apiBase . '/admin/generate_akun.php';
-    }
-
-    protected function callApi(string $url, array $params = []): ?array
-    {
-        try {
-            if (!empty($params)) {
-                $url .= '?' . http_build_query($params);
-            }
-            $response = Http::timeout(10)->withOptions(['verify' => false])->get($url);
-            return $response->successful() ? $response->json() : null;
-        } catch (\Exception $e) {
-            Log::error('Guru API Error: ' . $e->getMessage());
-            return null;
-        }
-    }
-
     /** Halaman daftar guru */
     public function index()
     {
-        $data     = $this->callApi($this->apiGuru);
-        $guruList = $data['data'] ?? [];
+        $guruList = DB::table('guru')
+            ->orderBy('nama_guru')
+            ->get()
+            ->map(fn($g) => (array) $g)
+            ->toArray();
+
         return view('admin.guru.index', compact('guruList'));
     }
 
-    /** AJAX: simpan (tambah/edit) */
+    /** AJAX: tambah guru */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_guru' => 'required|string|min:3',
+            'nama_guru' => 'required|string|min:3|max:100',
             'nip'       => 'required|digits_between:8,18',
-            'alamat'    => 'required|string|min:10',
+            'alamat'    => 'required|string|min:10|max:255',
             'no_telp'   => 'required|digits_between:10,15',
-            'email'     => 'required|email',
-            'kelas'     => 'required|string',
+            'email'     => 'required|email|max:100|unique:guru,email',
+            'kelas'     => 'required|string|max:10',
         ]);
 
-        try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->post($this->apiGuru, $validated);
+        DB::table('guru')->insert($validated);
 
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['success' => true, 'message' => 'Data guru berhasil ditambahkan']);
-            }
-            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Gagal menyimpan'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
+        return response()->json(['success' => true, 'message' => 'Data guru berhasil ditambahkan']);
     }
 
-    /** AJAX: update */
+    /** AJAX: update guru */
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'id_guru'   => 'required|integer',
-            'nama_guru' => 'required|string|min:3',
+            'id_guru'   => 'required|integer|exists:guru,id_guru',
+            'nama_guru' => 'required|string|min:3|max:100',
             'nip'       => 'required|digits_between:8,18',
-            'alamat'    => 'required|string|min:10',
+            'alamat'    => 'required|string|min:10|max:255',
             'no_telp'   => 'required|digits_between:10,15',
-            'email'     => 'required|email',
-            'kelas'     => 'required|string',
+            'email'     => 'required|email|max:100|unique:guru,email,' . $request->id_guru . ',id_guru',
+            'kelas'     => 'required|string|max:10',
         ]);
 
-        try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->put($this->apiGuru, $validated);
+        $id = $validated['id_guru'];
+        unset($validated['id_guru']);
 
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['success' => true, 'message' => 'Data guru berhasil diperbarui']);
-            }
-            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Gagal memperbarui'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
+        DB::table('guru')->where('id_guru', $id)->update($validated);
+
+        return response()->json(['success' => true, 'message' => 'Data guru berhasil diperbarui']);
     }
 
-    /** AJAX: hapus */
+    /** AJAX: hapus guru */
     public function destroy(Request $request)
     {
-        $request->validate(['id_guru' => 'required|integer']);
+        $request->validate(['id_guru' => 'required|integer|exists:guru,id_guru']);
 
-        try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->delete($this->apiGuru, ['id_guru' => $request->id_guru]);
+        DB::table('guru')->where('id_guru', $request->id_guru)->delete();
 
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['success' => true, 'message' => 'Data guru berhasil dihapus']);
-            }
-            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Gagal menghapus'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
+        return response()->json(['success' => true, 'message' => 'Data guru berhasil dihapus']);
     }
 
     /** AJAX: lihat akun guru */
@@ -126,18 +73,15 @@ class GuruController extends Controller
     {
         $request->validate(['id_guru' => 'required|integer']);
 
-        try {
-            $data = $this->callApi($this->apiAkun, [
-                'tipe' => 'guru',
-                'id'   => $request->id_guru,
-            ]);
+        $akun = DB::table('akun')
+            ->join('guru', 'akun.id_guru', '=', 'guru.id_guru')
+            ->where('akun.id_guru', $request->id_guru)
+            ->first(['akun.id_akun', 'akun.username', 'akun.password', 'akun.role', 'guru.nama_guru']);
 
-            if (($data['status'] ?? '') === 'success') {
-                return response()->json(['success' => true, 'data' => $data['data']]);
-            }
-            return response()->json(['success' => false, 'message' => $data['message'] ?? 'Gagal memuat akun'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        if (!$akun) {
+            return response()->json(['success' => false, 'message' => 'Akun tidak ditemukan'], 404);
         }
+
+        return response()->json(['success' => true, 'data' => (array) $akun]);
     }
 }

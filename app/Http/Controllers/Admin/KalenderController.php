@@ -4,32 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class KalenderController extends Controller
 {
-    protected string $apiBase;
-
-    public function __construct()
-    {
-        $this->apiBase = env('API_BASE_URL', 'https://ortuconnect.pbltifnganjuk.com/api');
-    }
-
-    protected function callApi(string $url, array $params = []): array
-    {
-        try {
-            if (!empty($params)) {
-                $url .= '?' . http_build_query($params);
-            }
-            $response = Http::timeout(10)->withOptions(['verify' => false])->get($url);
-            return $response->successful() ? ($response->json() ?? []) : [];
-        } catch (\Exception $e) {
-            Log::error('Kalender API Error: ' . $e->getMessage());
-            return [];
-        }
-    }
-
     /** Halaman kalender */
     public function index(Request $request)
     {
@@ -47,22 +25,27 @@ class KalenderController extends Controller
         }
 
         // Komponen kalender
-        $firstDay      = mktime(0, 0, 0, $month, 1, $year);
-        $numberOfDays  = (int) date('t', $firstDay);
-        $dayOfWeek     = (int) date('w', $firstDay);   // 0=Sun
-        $monthNameEn   = date('F', $firstDay);
+        $firstDay     = mktime(0, 0, 0, $month, 1, $year);
+        $numberOfDays = (int) date('t', $firstDay);
+        $dayOfWeek    = (int) date('w', $firstDay);
+        $monthNameEn  = date('F', $firstDay);
 
         $bulanId = [
-            'January'=>'Januari','February'=>'Februari','March'=>'Maret',
-            'April'=>'April','May'=>'Mei','June'=>'Juni',
-            'July'=>'Juli','August'=>'Agustus','September'=>'September',
-            'October'=>'Oktober','November'=>'November','December'=>'Desember',
+            'January' => 'Januari', 'February' => 'Februari', 'March'    => 'Maret',
+            'April'   => 'April',   'May'       => 'Mei',      'June'     => 'Juni',
+            'July'    => 'Juli',    'August'    => 'Agustus',  'September'=> 'September',
+            'October' => 'Oktober', 'November'  => 'November', 'December' => 'Desember',
         ];
         $monthNameId = $bulanId[$monthNameEn] ?? $monthNameEn;
 
-        // Ambil agenda dari API
-        $data      = $this->callApi("{$this->apiBase}/admin/agenda.php", ['month' => $month, 'year' => $year]);
-        $agendaList = $data['data'] ?? [];
+        // Ambil agenda bulan ini dari DB
+        $agendaList = DB::table('kalender')
+            ->whereYear('tanggal', $year)
+            ->whereMonth('tanggal', $month)
+            ->orderBy('tanggal')
+            ->get()
+            ->map(fn($a) => (array) $a)
+            ->toArray();
 
         // Kelompokkan per tanggal
         $agendaByDate = [];
@@ -84,91 +67,59 @@ class KalenderController extends Controller
         ));
     }
 
-    /** AJAX: simpan agenda (POST = tambah, PUT = edit) */
+    /** AJAX: tambah agenda */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_kegiatan' => 'required|string|min:2',
+            'nama_kegiatan' => 'required|string|min:2|max:150',
             'tanggal'       => 'required|date',
             'deskripsi'     => 'nullable|string',
         ]);
 
-        try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->post("{$this->apiBase}/admin/agenda.php", $validated);
+        DB::table('kalender')->insert($validated);
 
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['status' => 'success', 'message' => $result['message'] ?? 'Agenda berhasil ditambahkan']);
-            }
-            return response()->json(['status' => 'error', 'message' => $result['message'] ?? 'Gagal menyimpan'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        return response()->json(['status' => 'success', 'message' => 'Agenda berhasil ditambahkan']);
     }
 
     /** AJAX: update agenda */
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'id'            => 'required',
-            'nama_kegiatan' => 'required|string|min:2',
+            'id'            => 'required|integer|exists:kalender,id_kegiatan',
+            'nama_kegiatan' => 'required|string|min:2|max:150',
             'tanggal'       => 'required|date',
             'deskripsi'     => 'nullable|string',
         ]);
 
-        try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->put("{$this->apiBase}/admin/agenda.php", $validated);
+        $id = $validated['id'];
+        unset($validated['id']);
 
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['status' => 'success', 'message' => $result['message'] ?? 'Agenda berhasil diperbarui']);
-            }
-            return response()->json(['status' => 'error', 'message' => $result['message'] ?? 'Gagal memperbarui'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        DB::table('kalender')->where('id_kegiatan', $id)->update($validated);
+
+        return response()->json(['status' => 'success', 'message' => 'Agenda berhasil diperbarui']);
     }
 
     /** AJAX: hapus agenda */
     public function destroy(Request $request)
     {
-        $request->validate(['id' => 'required']);
+        $request->validate(['id' => 'required|integer|exists:kalender,id_kegiatan']);
 
-        try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->delete("{$this->apiBase}/admin/agenda.php", ['id' => $request->id]);
+        DB::table('kalender')->where('id_kegiatan', $request->id)->delete();
 
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['status' => 'success', 'message' => $result['message'] ?? 'Agenda berhasil dihapus']);
-            }
-            return response()->json(['status' => 'error', 'message' => $result['message'] ?? 'Gagal menghapus'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        return response()->json(['status' => 'success', 'message' => 'Agenda berhasil dihapus']);
     }
 
-    /** AJAX: ambil detail satu agenda */
+    /** AJAX: detail satu agenda */
     public function show(Request $request)
     {
-        $request->validate(['id' => 'required']);
+        $request->validate(['id' => 'required|integer']);
 
-        try {
-            $data = $this->callApi("{$this->apiBase}/admin/agenda.php", ['id' => $request->id]);
-            if (($data['status'] ?? '') === 'success' && isset($data['data'])) {
-                return response()->json(['status' => 'success', 'data' => $data['data']]);
-            }
+        $agenda = DB::table('kalender')->where('id_kegiatan', $request->id)->first();
+
+        if (!$agenda) {
             return response()->json(['status' => 'error', 'message' => 'Data tidak ditemukan'], 404);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
+
+        return response()->json(['status' => 'success', 'data' => (array) $agenda]);
     }
 }

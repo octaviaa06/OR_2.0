@@ -4,60 +4,24 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class SiswaController extends Controller
 {
-    protected string $apiBase;
-    protected string $apiSiswa;
-    protected string $apiAkun;
-
-    public function __construct()
-    {
-        $this->apiBase  = env('API_BASE_URL', 'https://ortuconnect.pbltifnganjuk.com/api');
-        $this->apiSiswa = $this->apiBase . '/admin/data_siswa.php';
-        $this->apiAkun  = $this->apiBase . '/admin/generate_akun.php';
-    }
-
-    protected function callApi(string $url, array $params = []): ?array
-    {
-        try {
-            if (!empty($params)) {
-                $url .= '?' . http_build_query($params);
-            }
-            $response = Http::timeout(10)->withOptions(['verify' => false])->get($url);
-            return $response->successful() ? $response->json() : null;
-        } catch (\Exception $e) {
-            Log::error('Siswa API Error: ' . $e->getMessage());
-            return null;
-        }
-    }
-
     /** Halaman daftar siswa */
     public function index(Request $request)
     {
         $selectedKelas = $request->query('kelas_filter', '');
 
-        // Ambil semua data tanpa filter kelas ke API
-        // (normalisasi dan filter dilakukan di sisi client/blade)
-        $data      = $this->callApi($this->apiSiswa);
-        $rawList   = $data['data'] ?? [];
+        $query = DB::table('siswa')->orderBy('kelas')->orderBy('nama_siswa');
 
-        // Normalisasi kelas: "Kelas A" → "A", "kelas b" → "B", dst.
-        $siswaList = array_map(function ($siswa) {
-            if (isset($siswa['kelas'])) {
-                $kelas = trim($siswa['kelas']);
-                $kelas = preg_replace('/^kelas\s+/i', '', $kelas);
-                $siswa['kelas'] = strtoupper($kelas);
-            }
-            return $siswa;
-        }, $rawList);
-
-        // Filter di PHP setelah normalisasi
         if ($selectedKelas !== '') {
-            $siswaList = array_values(array_filter($siswaList, fn($s) => ($s['kelas'] ?? '') === strtoupper($selectedKelas)));
+            $query->where('kelas', $selectedKelas);
         }
+
+        $siswaList = $query->get()
+            ->map(fn($s) => (array) $s)
+            ->toArray();
 
         $today = now()->toDateString();
 
@@ -68,86 +32,53 @@ class SiswaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_siswa'   => 'required|string|min:3',
-            'kelas'        => 'required|string',
-            'tanggal_lahir'=> 'required|date|before_or_equal:today',
-            'gender'       => 'required|in:Laki-Laki,Perempuan',
-            'nama_ortu'    => 'required|string|min:3',
-            'no_telp_ortu' => 'required|digits_between:10,15',
-            'alamat'       => 'nullable|string',
+            'nama_siswa'    => 'required|string|min:3|max:100',
+            'kelas'         => 'required|string|max:50',
+            'tanggal_lahir' => 'required|date|before_or_equal:today',
+            'gender'        => 'required|in:Laki-Laki,Perempuan',
+            'nama_ortu'     => 'required|string|min:3|max:100',
+            'no_telp_ortu'  => 'required|digits_between:10,15',
+            'alamat'        => 'nullable|string|max:255',
         ]);
 
-        // Normalisasi kelas sebelum dikirim ke API
         $validated['kelas'] = strtoupper(preg_replace('/^kelas\s+/i', '', trim($validated['kelas'])));
 
-        try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->post($this->apiSiswa, $validated);
+        DB::table('siswa')->insert($validated);
 
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['success' => true, 'message' => 'Data siswa berhasil ditambahkan']);
-            }
-            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Gagal menyimpan'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
+        return response()->json(['success' => true, 'message' => 'Data siswa berhasil ditambahkan']);
     }
 
     /** AJAX: update siswa */
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'id_siswa'     => 'required|integer',
-            'nama_siswa'   => 'required|string|min:3',
-            'kelas'        => 'required|string',
-            'tanggal_lahir'=> 'required|date|before_or_equal:today',
-            'gender'       => 'required|in:Laki-Laki,Perempuan',
-            'nama_ortu'    => 'required|string|min:3',
-            'no_telp_ortu' => 'required|digits_between:10,15',
-            'alamat'       => 'nullable|string',
+            'id_siswa'      => 'required|integer|exists:siswa,id_siswa',
+            'nama_siswa'    => 'required|string|min:3|max:100',
+            'kelas'         => 'required|string|max:50',
+            'tanggal_lahir' => 'required|date|before_or_equal:today',
+            'gender'        => 'required|in:Laki-Laki,Perempuan',
+            'nama_ortu'     => 'required|string|min:3|max:100',
+            'no_telp_ortu'  => 'required|digits_between:10,15',
+            'alamat'        => 'nullable|string|max:255',
         ]);
 
-        // Normalisasi kelas sebelum dikirim ke API
+        $id = $validated['id_siswa'];
+        unset($validated['id_siswa']);
         $validated['kelas'] = strtoupper(preg_replace('/^kelas\s+/i', '', trim($validated['kelas'])));
 
-        try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->put($this->apiSiswa, $validated);
+        DB::table('siswa')->where('id_siswa', $id)->update($validated);
 
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['success' => true, 'message' => 'Data siswa berhasil diperbarui']);
-            }
-            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Gagal memperbarui'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
+        return response()->json(['success' => true, 'message' => 'Data siswa berhasil diperbarui']);
     }
 
     /** AJAX: hapus siswa */
     public function destroy(Request $request)
     {
-        $request->validate(['id_siswa' => 'required|integer']);
+        $request->validate(['id_siswa' => 'required|integer|exists:siswa,id_siswa']);
 
-        try {
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->delete($this->apiSiswa, ['id_siswa' => $request->id_siswa]);
+        DB::table('siswa')->where('id_siswa', $request->id_siswa)->delete();
 
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['success' => true, 'message' => 'Data siswa berhasil dihapus']);
-            }
-            return response()->json(['success' => false, 'message' => $result['message'] ?? 'Gagal menghapus'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
+        return response()->json(['success' => true, 'message' => 'Data siswa berhasil dihapus']);
     }
 
     /** AJAX: lihat akun siswa */
@@ -155,18 +86,15 @@ class SiswaController extends Controller
     {
         $request->validate(['id_siswa' => 'required|integer']);
 
-        try {
-            $data = $this->callApi($this->apiAkun, [
-                'tipe' => 'siswa',
-                'id'   => $request->id_siswa,
-            ]);
+        $akun = DB::table('akun')
+            ->join('siswa', 'akun.id_siswa', '=', 'siswa.id_siswa')
+            ->where('akun.id_siswa', $request->id_siswa)
+            ->first(['akun.id_akun', 'akun.username', 'akun.password', 'akun.role', 'siswa.nama_siswa']);
 
-            if (($data['status'] ?? '') === 'success') {
-                return response()->json(['success' => true, 'data' => $data['data']]);
-            }
-            return response()->json(['success' => false, 'message' => $data['message'] ?? 'Gagal memuat akun'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        if (!$akun) {
+            return response()->json(['success' => false, 'message' => 'Akun tidak ditemukan'], 404);
         }
+
+        return response()->json(['success' => true, 'data' => (array) $akun]);
     }
 }

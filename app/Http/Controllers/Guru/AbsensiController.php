@@ -4,33 +4,11 @@ namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
 class AbsensiController extends Controller
 {
-    protected string $apiBase;
-
-    public function __construct()
-    {
-        $this->apiBase = env('API_BASE_URL', 'https://ortuconnect.pbltifnganjuk.com/api');
-    }
-
-    protected function callApi(string $url, array $params = []): ?array
-    {
-        try {
-            if (!empty($params)) {
-                $url .= '?' . http_build_query($params);
-            }
-            $response = Http::timeout(10)->withOptions(['verify' => false])->get($url);
-            return $response->successful() ? $response->json() : null;
-        } catch (\Exception $e) {
-            Log::error('Absensi API Error: ' . $e->getMessage());
-            return null;
-        }
-    }
-
     /** Halaman utama absensi */
     public function index(Request $request)
     {
@@ -38,11 +16,7 @@ class AbsensiController extends Controller
         $minDate = now()->subDays(5)->toDateString();
         $maxDate = $today;
 
-        // Ambil semua kelas dari API
-        $kelasData = $this->callApi("{$this->apiBase}/admin/absensi.php", ['mode' => 'kelas']);
-        $allKelas  = $kelasData['data'] ?? [];
-
-        // Kelas dari session
+        // Kelas yang boleh diakses guru (dari session)
         $kelasSession = Session::get('kelas', '');
         $kelasGuru    = [];
         if ($kelasSession) {
@@ -51,57 +25,59 @@ class AbsensiController extends Controller
                 : [$kelasSession];
         }
 
-        // Daftar kelas yang bisa diakses
-        $kelasList = !empty($kelasGuru)
-            ? array_values(array_unique(array_filter($allKelas, fn($k) => in_array($k, $kelasGuru))))
-            : array_values(array_unique($allKelas));
+        // Ambil semua kelas dari DB, filter sesuai hak akses guru
+        $allKelas = DB::table('siswa')
+            ->select('kelas')->distinct()->orderBy('kelas')
+            ->pluck('kelas')->toArray();
 
-        if (empty($kelasList) && !empty($kelasGuru)) {
-            $kelasList = array_values(array_unique($kelasGuru));
-        }
+        $kelasList = !empty($kelasGuru)
+            ? array_values(array_filter($allKelas, fn($k) => in_array($k, $kelasGuru)))
+            : $allKelas;
 
         $kelasDefault  = $kelasList[0] ?? '';
-        $selectedClass = $request->query('kelas', '');   // kosong = semua kelas (default view)
+        $selectedClass = $request->query('kelas', '');
         $selectedDate  = $request->query('tanggal', $today);
 
         // Validasi tanggal
-        if ($selectedDate > $maxDate) $selectedDate = $maxDate;
-        if ($selectedDate < $minDate) $selectedDate = $minDate;
+        $selectedDate = max($minDate, min($maxDate, $selectedDate));
 
-        // Validasi kelas (jika dipilih)
+        // Validasi kelas
         if ($selectedClass && !empty($kelasGuru) && !in_array($selectedClass, $kelasGuru)) {
             $selectedClass = '';
         }
 
-        $absensiList  = [];
-        $isDefaultView = $selectedClass === '';   // true = tampilkan semua belum absen
+        $isDefaultView = $selectedClass === '';
+        $absensiList   = [];
+        $targetKelas   = $isDefaultView ? $kelasList : [$selectedClass];
 
-        if ($isDefaultView) {
-            // Kumpulkan semua siswa yang BELUM diabsen dari semua kelas
-            foreach ($kelasList as $kelas) {
-                $data = $this->callApi("{$this->apiBase}/admin/absensi.php", [
-                    'kelas'   => $kelas,
-                    'tanggal' => $selectedDate,
-                ]);
-                foreach ($data['data'] ?? [] as $siswa) {
-                    $siswa['is_recorded'] = !empty($siswa['status_absensi']);
-                    $siswa['kelas_nama']  = $kelas;   // tambah info kelas untuk tampilan
-                    if (!$siswa['is_recorded']) {
-                        $absensiList[] = $siswa;
-                    }
-                }
+        foreach ($targetKelas as $kelas) {
+            $siswaList = DB::table('siswa')
+                ->where('kelas', $kelas)
+                ->orderBy('nama_siswa')
+                ->get(['id_siswa', 'nama_siswa', 'kelas'])
+                ->toArray();
+
+            $absensiHariIni = DB::table('absensi')
+                ->where('tanggal', $selectedDate)
+                ->whereIn('id_siswa', array_column($siswaList, 'id_siswa'))
+                ->pluck('status', 'id_siswa')
+                ->toArray();
+
+            foreach ($siswaList as $siswa) {
+                $statusAbsensi = $absensiHariIni[$siswa->id_siswa] ?? null;
+                $row = [
+                    'id_siswa'       => $siswa->id_siswa,
+                    'nama_siswa'     => $siswa->nama_siswa,
+                    'kelas_nama'     => $siswa->kelas,
+                    'status_absensi' => $statusAbsensi,
+                    'is_recorded'    => !is_null($statusAbsensi),
+                ];
+
+                // Default view: hanya tampilkan yang belum diabsen
+                if ($isDefaultView && $row['is_recorded']) continue;
+
+                $absensiList[] = $row;
             }
-        } else {
-            // Kelas spesifik dipilih — tampilkan semua siswa kelas itu
-            $data = $this->callApi("{$this->apiBase}/admin/absensi.php", [
-                'kelas'   => $selectedClass,
-                'tanggal' => $selectedDate,
-            ]);
-            $absensiList = array_map(function ($a) use ($selectedClass) {
-                $a['is_recorded'] = !empty($a['status_absensi']);
-                $a['kelas_nama']  = $selectedClass;
-                return $a;
-            }, $data['data'] ?? []);
         }
 
         return view('guru.absensi.index', compact(
@@ -116,37 +92,28 @@ class AbsensiController extends Controller
     public function simpan(Request $request)
     {
         $request->validate([
-            'tanggal' => 'required|date',
-            'kelas'   => 'required|string',
-            'absensi' => 'required|array',
+            'tanggal'            => 'required|date',
+            'kelas'              => 'required|string',
+            'absensi'            => 'required|array',
+            'absensi.*.id_murid' => 'required|integer|exists:siswa,id_siswa',
+            'absensi.*.status'   => 'required|in:Hadir,Izin,Sakit,Alpa',
         ]);
 
-        try {
-            $payload = [
-                'tanggal' => $request->tanggal,
-                'kelas'   => $request->kelas,
-                'absensi' => array_map(fn($item) => [
-                    'id_murid' => $item['id_murid'],
-                    'status'   => $item['status'],
-                ], $request->absensi),
-            ];
+        $tanggal = $request->tanggal;
 
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false])
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->post("{$this->apiBase}/admin/absensi.php", $payload);
-
-            $result = $response->json();
-            if (($result['status'] ?? '') === 'success') {
-                return response()->json(['status' => 'success', 'message' => $result['message'] ?? 'Absensi berhasil disimpan']);
+        DB::transaction(function () use ($request, $tanggal) {
+            foreach ($request->absensi as $item) {
+                DB::table('absensi')->updateOrInsert(
+                    ['id_siswa' => $item['id_murid'], 'tanggal' => $tanggal],
+                    ['status'   => $item['status']]
+                );
             }
-            return response()->json(['status' => 'error', 'message' => $result['message'] ?? 'Gagal menyimpan'], 400);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        });
+
+        return response()->json(['status' => 'success', 'message' => 'Absensi berhasil disimpan']);
     }
 
-    /** AJAX: export data untuk PDF (return JSON, PDF dibuat di JS) */
+    /** AJAX: export data absensi (return JSON, PDF dibuat di JS) */
     public function exportData(Request $request)
     {
         $request->validate([
@@ -155,46 +122,32 @@ class AbsensiController extends Controller
             'filter_type' => 'required|in:hari,minggu,bulan',
         ]);
 
-        $kelas      = $request->kelas;
-        $tanggal    = $request->tanggal;
-        $filterType = $request->filter_type;
+        [$startDate, $endDate] = $this->getDateRange($request->filter_type, $request->tanggal);
 
-        [$startDate, $endDate] = $this->getDateRange($filterType, $tanggal);
+        $rows = DB::table('absensi')
+            ->join('siswa', 'absensi.id_siswa', '=', 'siswa.id_siswa')
+            ->where('siswa.kelas', $request->kelas)
+            ->whereBetween('absensi.tanggal', [$startDate, $endDate])
+            ->get(['siswa.id_siswa', 'siswa.nama_siswa', 'absensi.status'])
+            ->toArray();
 
-        // Kumpulkan data semua tanggal dalam rentang
-        $allData    = [];
-        $current    = new \DateTime($startDate);
-        $end        = new \DateTime($endDate);
-
-        while ($current <= $end) {
-            $dateStr = $current->format('Y-m-d');
-            $data    = $this->callApi("{$this->apiBase}/admin/absensi.php", [
-                'kelas'   => $kelas,
-                'tanggal' => $dateStr,
-            ]);
-            foreach ($data['data'] ?? [] as $item) {
-                $item['tanggal_absensi'] = $dateStr;
-                $allData[] = $item;
-            }
-            $current->modify('+1 day');
-        }
-
-        // Hitung statistik per siswa
         $statistics = [];
-        foreach ($allData as $item) {
-            $id = $item['id_siswa'];
+        foreach ($rows as $row) {
+            $id = $row->id_siswa;
             if (!isset($statistics[$id])) {
-                $statistics[$id] = ['nama' => $item['nama_siswa'], 'Hadir' => 0, 'Izin' => 0, 'Sakit' => 0, 'Alpa' => 0];
+                $statistics[$id] = [
+                    'nama'  => $row->nama_siswa,
+                    'Hadir' => 0, 'Izin' => 0, 'Sakit' => 0, 'Alpa' => 0,
+                ];
             }
-            $status = $item['status_absensi'] ?? '';
-            if ($status && isset($statistics[$id][$status])) {
-                $statistics[$id][$status]++;
+            if (isset($statistics[$id][$row->status])) {
+                $statistics[$id][$row->status]++;
             }
         }
 
         return response()->json([
             'status'     => 'success',
-            'kelas'      => $kelas,
+            'kelas'      => $request->kelas,
             'start_date' => $startDate,
             'end_date'   => $endDate,
             'data'       => array_values($statistics),
@@ -204,16 +157,15 @@ class AbsensiController extends Controller
     private function getDateRange(string $type, string $date): array
     {
         $d = new \DateTime($date);
-        return match ($type) {
-            'minggu' => [
+        if ($type === 'minggu') {
+            return [
                 (clone $d)->modify('monday this week')->format('Y-m-d'),
                 (clone $d)->modify('sunday this week')->format('Y-m-d'),
-            ],
-            'bulan' => [
-                $d->format('Y-m-01'),
-                $d->format('Y-m-t'),
-            ],
-            default => [$date, $date],
-        };
+            ];
+        }
+        if ($type === 'bulan') {
+            return [$d->format('Y-m-01'), $d->format('Y-m-t')];
+        }
+        return [$date, $date];
     }
 }

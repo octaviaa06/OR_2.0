@@ -4,163 +4,96 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Log;
 
 class AdminDashboardController extends Controller
 {
-    protected $apiBaseUrl;
-
-    public function __construct()
-    {
-        $this->apiBaseUrl = env('API_BASE_URL', 'https://ortuconnect.pbltifnganjuk.com/api');
-    }
-
-    /**
-     * Helper function untuk call API eksternal
-     */
-    protected function callApi($endpoint, $params = [])
-    {
-        try {
-            $url = $this->apiBaseUrl . $endpoint;
-            if (!empty($params)) {
-                $url .= '?' . http_build_query($params);
-            }
-
-            $response = Http::timeout(10)
-                ->withOptions(['verify' => false]) // Hanya untuk development, production gunakan SSL valid
-                ->get($url);
-
-            return $response->successful() ? $response->json() : null;
-        } catch (\Exception $e) {
-            Log::error('API Error: ' . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Tampilkan Dashboard Admin
-     */
+    /** Tampilkan Dashboard Admin */
     public function index()
     {
-        // Ambil data dashboard utama
-        $dashboardData = $this->callApi('/admin/dashboard_admin.php', ['t' => time()]);
-        
-        $guru = $dashboardData['guru'] ?? 0;
-        $siswa = $dashboardData['siswa'] ?? 0;
-        $agenda = $dashboardData['agenda_terdekat'] ?? [];
+        $guru  = DB::table('guru')->count();
+        $siswa = DB::table('siswa')->count();
 
-        // Ambil data izin dengan filter "Menunggu"
+        // Agenda 7 hari ke depan (maks 5)
+        $agenda = DB::table('kalender')
+            ->whereBetween('tanggal', [now()->toDateString(), now()->addDays(7)->toDateString()])
+            ->orderBy('tanggal')
+            ->limit(5)
+            ->get()
+            ->toArray();
+
         $izin = $this->getIzinMenunggu();
 
-        // Hitung siswa masuk hari ini
         $siswaMasukHariIni = $this->hitungSiswaMasukHariIni();
-        $siswaTidakMasuk = max(0, $siswa - $siswaMasukHariIni);
+        $siswaTidakMasuk   = max(0, $siswa - $siswaMasukHariIni);
 
         return view('admin.dashboard', compact(
-            'guru', 'siswa', 'agenda', 'izin', 
+            'guru', 'siswa', 'agenda', 'izin',
             'siswaMasukHariIni', 'siswaTidakMasuk'
         ));
     }
 
-    /**
-     * Ambil izin dengan status Menunggu/Pending
-     */
-    protected function getIzinMenunggu()
+    /** Ambil izin berstatus Menunggu */
+    protected function getIzinMenunggu(): array
     {
-        $response = $this->callApi('/perizinan.php', ['t' => time()]);
-        $izin = [];
-
-        if (!$response) return $izin;
-
-        // Handle berbagai kemungkinan struktur response
-        $dataList = $response['data'] ?? $response['izin_menunggu'] ?? [];
-
-        if (is_array($dataList)) {
-            foreach ($dataList as $item) {
-                $status = strtolower($item['status'] ?? '');
-                if (in_array($status, ['menunggu', 'pending', 'waiting'])) {
-                    $izin[] = $item;
-                }
-            }
-        }
-
-        return $izin;
+        return DB::table('izin')
+            ->join('siswa', 'izin.id_siswa', '=', 'siswa.id_siswa')
+            ->where('izin.status', 'Menunggu')
+            ->orderBy('izin.tanggal_pengajuan', 'desc')
+            ->get([
+                'izin.id_izin',
+                'izin.jenis_izin',
+                'izin.tanggal_mulai',
+                'izin.tanggal_selesai',
+                'izin.keterangan',
+                'izin.status',
+                'siswa.nama_siswa',
+                'siswa.kelas',
+            ])
+            ->map(fn($i) => (array) $i)
+            ->toArray();
     }
 
-    /**
-     * Hitung siswa yang hadir hari ini
-     */
-    protected function hitungSiswaMasukHariIni()
+    /** Hitung siswa hadir hari ini */
+    protected function hitungSiswaMasukHariIni(): int
     {
-        $today = date('Y-m-d');
-        $kelasData = $this->callApi('/admin/absensi.php', ['mode' => 'kelas']);
-        $kelasList = $kelasData['data'] ?? [];
-        $totalMasuk = 0;
-
-        foreach ($kelasList as $kelas) {
-            $absensiData = $this->callApi('/admin/absensi.php', [
-                'kelas' => $kelas,
-                'tanggal' => $today
-            ]);
-
-            foreach ($absensiData['data'] ?? [] as $abs) {
-                if (($abs['status_absensi'] ?? '') === 'Hadir') {
-                    $totalMasuk++;
-                }
-            }
-        }
-
-        return $totalMasuk;
+        return DB::table('absensi')
+            ->where('tanggal', now()->toDateString())
+            ->where('status', 'Hadir')
+            ->count();
     }
 
-    /**
-     * Update status izin (Approve/Reject) via AJAX
-     */
+    /** AJAX: approve / reject izin */
     public function updateIzinStatus(Request $request)
     {
         $validated = $request->validate([
-            'id_izin' => 'required|integer',
-            'status' => 'required|in:Disetujui,Ditolak',
+            'id_izin'          => 'required|integer',
+            'status'           => 'required|in:Disetujui,Ditolak',
             'alasan_penolakan' => 'nullable|string|max:500',
-            'id_admin_verifikasi' => 'nullable|integer'
         ]);
 
-        try {
-            $payload = [
-                'id_izin' => $validated['id_izin'],
-                'status' => $validated['status'],
-                'id_admin_verifikasi' => $validated['id_admin_verifikasi'] ?? Session::get('id_akun')
-            ];
+        $update = [
+            'status'              => $validated['status'],
+            'tanggal_verifikasi'  => now(),
+        ];
 
-            if ($validated['status'] === 'Ditolak' && !empty($validated['alasan_penolakan'])) {
-                $payload['alasan_penolakan'] = $validated['alasan_penolakan'];
-            }
-
-            $response = Http::timeout(10)
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->withOptions(['verify' => false])
-                ->put($this->apiBaseUrl . '/perizinan.php', $payload);
-
-            if ($response->successful()) {
-                $result = $response->json();
-                if ($result['success'] ?? $result['status'] === 'success') {
-                    return response()->json(['success' => true, 'message' => 'Status izin berhasil diperbarui']);
-                }
-            }
-
-            return response()->json(['success' => false, 'message' => 'Gagal memperbarui status'], 400);
-
-        } catch (\Exception $e) {
-            Log::error('Update Izin Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Server error: ' . $e->getMessage()], 500);
+        if ($validated['status'] === 'Ditolak' && !empty($validated['alasan_penolakan'])) {
+            $update['alasan_penolakan'] = $validated['alasan_penolakan'];
         }
+
+        $affected = DB::table('izin')
+            ->where('id_izin', $validated['id_izin'])
+            ->update($update);
+
+        if ($affected) {
+            return response()->json(['success' => true, 'message' => 'Status izin berhasil diperbarui']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Data izin tidak ditemukan'], 404);
     }
 
-    /**
-     * Refresh data izin untuk auto-update via AJAX
-     */
+    /** AJAX: refresh data izin */
     public function refreshIzin()
     {
         $izin = $this->getIzinMenunggu();
