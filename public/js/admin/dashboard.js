@@ -19,6 +19,67 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 
+    // ===== CIRCULAR PROGRESS ANIMATION =====
+    function updateCircularProgress() {
+        const siswaMasukEl = document.getElementById('siswaMasukCount');
+        const siswaTotalEl = document.getElementById('siswaTotalCount');
+        
+        if (!siswaMasukEl || !siswaTotalEl) return;
+        
+        const siswaMasuk = parseInt(siswaMasukEl.textContent) || 0;
+        const totalSiswa = parseInt(siswaTotalEl.textContent) || 0;
+        
+        if (totalSiswa === 0) return;
+        
+        const percentage = (siswaMasuk / totalSiswa) * 100;
+        const radius = 100;
+        const circumference = 2 * Math.PI * radius; // 628.32
+        const offset = circumference - (percentage / 100) * circumference;
+        
+        const circle = document.querySelector('.progress-ring__circle');
+        if (circle) {
+            // Set initial state
+            circle.style.transition = 'none';
+            circle.style.strokeDasharray = circumference;
+            circle.style.strokeDashoffset = circumference;
+            
+            // Trigger reflow
+            void circle.offsetWidth;
+            
+            // Animate to final state
+            circle.style.transition = 'stroke-dashoffset 1.2s ease-out';
+            circle.style.strokeDashoffset = offset;
+        }
+        
+        // Animate counting numbers
+        animateValue(siswaMasukEl, 0, siswaMasuk, 1000);
+    }
+    
+    // Helper: Animate number counting
+    function animateValue(element, start, end, duration) {
+        if (start === end) return;
+        
+        const range = end - start;
+        const startTime = performance.now();
+        
+        function step(currentTime) {
+            const progress = Math.min((currentTime - startTime) / duration, 1);
+            // Easing function for smooth animation
+            const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+            const current = Math.floor(start + (range * easeOutQuart));
+            
+            element.textContent = current;
+            
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            } else {
+                element.textContent = end; // Ensure exact final value
+            }
+        }
+        
+        requestAnimationFrame(step);
+    }
+
     // ===== APPROVE BUTTON CLICK =====
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('btn-setujui')) {
@@ -184,7 +245,14 @@ document.addEventListener('DOMContentLoaded', function() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } }
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: { enabled: true }
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: true
+                }
             },
             plugins: [{
                 id: 'textCenter',
@@ -205,6 +273,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initialize
+    // ===== INITIALIZE ALL ANIMATIONS =====
+    // Delay slightly to ensure DOM is fully rendered
+    setTimeout(() => {
+        updateCircularProgress();
+    }, 200);
+    
+    // Initialize auto refresh
     autoRefreshIzin();
 });

@@ -437,3 +437,131 @@ textarea.field-input { resize: vertical; min-height: 80px; }
     .siswa-card-top { gap: 10px; }
     .siswa-avatar { width: 44px; height: 44px; font-size: 15px; }
 }
+
+/* ========================================
+   ✨ SISWA PAGE ENHANCEMENTS ✨
+   ======================================== */
+
+/* ----- 1. MAIN CONTENT & BACKGROUND FILLER ----- */
+.siswa-main { position: relative; overflow: hidden; }
+
+.siswa-bg-filler {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0; overflow: hidden;
+}
+
+/* Subtle Doodle Patterns - Chalk Style (Opacity 3-4%) */
+.doodle {
+    position: absolute; pointer-events: none;
+    animation: doodleFloat 30s ease-in-out infinite;
+}
+.doodle-1 { top: 12%; right: 6%; width: 100px; height: 100px; animation-delay: 0s; }
+.doodle-2 { bottom: 18%; left: 4%; width: 90px; height: 90px; animation-delay: -10s; }
+.doodle-3 { top: 50%; right: 12%; width: 80px; height: 80px; animation-delay: -20s; }
+
+@keyframes doodleFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.03; }
+    50% { transform: translateY(-8px) rotate(1deg); opacity: 0.05; }
+}
+
+/* Radial Glow Accents - Faint Purple/Blue */
+.radial-glow {
+    position: absolute; border-radius: 50%;
+    filter: blur(90px); opacity: 0.05;
+    animation: glowPulse 18s ease-in-out infinite alternate;
+}
+.radial-glow.glow-1 {
+    width: 550px; height: 550px;
+    background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+    top: -180px; left: -120px;
+}
+.radial-glow.glow-2 {
+    width: 450px; height: 450px;
+    background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+    bottom: -140px; right: -90px;
+    animation-delay: -7s;
+}
+@keyframes glowPulse {
+    0% { opacity: 0.03; transform: scale(1); }
+    100% { opacity: 0.07; transform: scale(1.03); }
+}
+
+/* ----- 2. QUICK STATS BAR ✨ ----- */
+.quick-stats {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; padding: 6px 12px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 20px;
+    font-size: 0.75rem; color: var(--text-muted);
+    font-family: 'Poppins', sans-serif;
+}
+.stat-item { display: flex; align-items: center; gap: 4px; font-weight: 500; }
+.stat-icon { font-size: 0.85rem; }
+.stat-value { font-weight: 700; color: var(--primary-light); }
+.stat-divider { color: rgba(139, 92, 246, 0.3); font-weight: 400; }
+
+/* ----- 3. COLORED INFO ICONS ----- */
+.info-icon { flex-shrink: 0; transition: var(--transition); }
+
+/* Gender Icons */
+.icon-gender { color: #3b82f6; }
+.info-gender:hover .icon-gender { 
+    color: #60a5fa; 
+    filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.5));
+}
+
+/* Parent Icon - Cute Purple */
+.icon-parent { color: #8b5cf6; }
+.info-parent:hover .icon-parent { 
+    color: #a78bfa; 
+    filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.5));
+}
+.parent-name {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 180px; display: inline-block;
+}
+
+/* Phone - Green */
+.icon-phone { color: #22c55e; }
+.info-phone:hover .icon-phone { 
+    color: #4ade80; 
+    filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.5));
+}
+
+/* Address - Pink */
+.icon-address { color: #d946ef; }
+.info-address:hover .icon-address { 
+    color: #e879f9; 
+    filter: drop-shadow(0 0 4px rgba(217, 70, 239, 0.5));
+}
+
+/* ----- 4. TEXT OVERFLOW FOR LONG ADDRESS ✨ ----- */
+.address-text {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px; display: inline-block;
+}
+
+/* ----- 5. HOVER EFFECT: Lift Up + Glowing Border ----- */
+.siswa-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.siswa-card:hover {
+    transform: translateY(-8px) !important;
+    border-color: rgba(139, 92, 246, 0.7) !important;
+    box-shadow: 
+        0 20px 40px rgba(0,0,0,0.4),
+        0 0 0 1px rgba(139, 92, 246, 0.3),
+        0 0 35px rgba(139, 92, 246, 0.2) !important;
+}
+.siswa-card:hover .siswa-avatar {
+    transform: scale(1.05);
+    border-color: var(--primary);
+}
+
+/* ----- 6. RESPONSIVE: Hide Heavy Effects on Mobile ----- */
+@media (max-width: 768px) {
+    .siswa-bg-filler { display: none; }
+    .quick-stats { flex-wrap: wrap; justify-content: center; }
+    .parent-name, .address-text { max-width: 140px; }
+}

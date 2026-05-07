@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    const hamburger = document.getElementById('hamburgerBtn');
-    const toggleBtn = document.getElementById('toggleSidebarBtn');
+    const sidebar    = document.getElementById('sidebar');
+    const overlay    = document.getElementById('sidebarOverlay');
+    const hamburger  = document.getElementById('hamburgerBtn');
+    const toggleBtn  = document.getElementById('toggleSidebarBtn');
 
     // Toggle Sidebar Function
     function toggleSidebar() {
@@ -20,14 +20,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Event Listeners
-    hamburger?.addEventListener('click', toggleSidebar);
+    hamburger?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSidebar();
+    });
+    
     overlay?.addEventListener('click', toggleSidebar);
-    toggleBtn?.addEventListener('click', toggleSidebar);
+    
+    toggleBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSidebar();
+    });
 
     // Close sidebar when clicking a menu link (mobile only)
     document.querySelectorAll('#sidebar .nav-link').forEach(link => {
         link.addEventListener('click', () => {
-            if (window.innerWidth < 992) {
+            if (window.innerWidth < 992 && sidebar.classList.contains('show')) {
                 sidebar.classList.remove('show');
                 overlay?.classList.remove('show');
                 hamburger?.classList.remove('active');
@@ -72,8 +80,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
     sidebar.addEventListener('touchend', (e) => {
         const endX = e.changedTouches[0].clientX;
-        if (startX - endX > 70 && sidebar.classList.contains('show')) {
+        // Swipe right to close
+        if (endX - startX > 70 && sidebar.classList.contains('show')) {
             toggleSidebar();
         }
     }, { passive: true });
+
+    // Optional: Add tooltips dynamically for collapsed mode
+    if (window.innerWidth >= 992) {
+        document.querySelectorAll('.nav-link').forEach(link => {
+            const menuText = link.querySelector('.menu-text');
+            if (menuText && !link.querySelector('.sidebar-tooltip')) {
+                const tooltip = document.createElement('span');
+                tooltip.className = 'sidebar-tooltip';
+                tooltip.textContent = menuText.textContent;
+                link.appendChild(tooltip);
+            }
+        });
+    }
 });

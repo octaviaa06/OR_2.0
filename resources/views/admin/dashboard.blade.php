@@ -21,7 +21,48 @@
          style="background-image: url('{{ asset('images/background/Dashboard Admin.png') }}'); 
                 background-size: cover; 
                 background-position: center;">
-      <div class="container-fluid">
+        
+        <!-- ================= VISUAL EFFECTS START ================= -->
+        <div class="admin-bg-grid"></div>
+        <div class="admin-star-dust"></div>
+
+        <div class="floating-icons-wrapper">
+            <!-- Layer Belakang -->
+            <div class="parallax-layer layer-back">
+                <img src="{{ asset('images/icon/abc-block.png') }}" class="float-icon" style="--x: 15%; --y: 20%; --depth: 0.2;">
+                <img src="{{ asset('images/icon/car.png') }}" class="float-icon" style="--x: 85%; --y: 30%; --depth: 0.3;">
+                <img src="{{ asset('images/icon/toys.png') }}" class="float-icon" style="--x: 40%; --y: 80%; --depth: 0.2;">
+            </div>
+            <!-- Layer Tengah -->
+            <div class="parallax-layer layer-mid">
+                <img src="{{ asset('images/icon/animal.png') }}" class="float-icon" style="--x: 10%; --y: 45%; --depth: 0.5;">
+                <img src="{{ asset('images/icon/lollipop.png') }}" class="float-icon" style="--x: 90%; --y: 60%; --depth: 0.6;">
+                <img src="{{ asset('images/icon/rubber-duck.png') }}" class="float-icon" style="--x: 25%; --y: 75%; --depth: 0.5;">
+            </div>
+            <!-- Layer Depan -->
+            <div class="parallax-layer layer-front">
+                <img src="{{ asset('images/icon/car.png') }}" class="float-icon" style="--x: 5%; --y: 85%; --depth: 1.2;">
+                <img src="{{ asset('images/icon/toys.png') }}" class="float-icon" style="--x: 95%; --y: 10%; --depth: 1.4;">
+            </div>
+        </div>
+
+        <div class="admin-mascot-peek">
+            <svg viewBox="0 0 100 100" class="admin-mascot-svg">
+                <circle cx="50" cy="15" r="8" fill="#8b5cf6"/>
+                <rect x="48" y="15" width="4" height="10" fill="#a855f7"/>
+                <rect x="20" y="25" width="60" height="50" rx="15" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
+                <circle cx="35" cy="45" r="5" fill="#fff"/>
+                <circle cx="65" cy="45" r="5" fill="#fff"/>
+                <circle cx="35" cy="45" r="2" fill="#8b5cf6"/>
+                <circle cx="65" cy="45" r="2" fill="#8b5cf6"/>
+                <path d="M40 60 Q50 70 60 60" stroke="#fff" stroke-width="3" fill="none"/>
+                <path d="M15 50 Q5 40 15 30" stroke="#64748b" stroke-width="4" fill="none" stroke-linecap="round"/>
+                <path d="M85 50 Q95 40 85 30" stroke="#64748b" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <!-- ================= VISUAL EFFECTS END ================= -->
+
+      <div class="container-fluid" style="position: relative; z-index: 10;">
 
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4 header-fixed">
@@ -30,9 +71,11 @@
           @include('admin.partials.profile')
         </div>
 
-        <!-- Stats Cards -->
+        <!-- ================= STATS ROW (3 COLUMNS) ================= -->
         <div class="row g-3 mb-4">
-          <div class="col-6 col-md-4">
+          
+          <!-- 1. Jumlah Guru -->
+          <div class="col-12 col-md-4">
             <div class="card stat-card shadow-sm">
               <div class="card-body stat-card-body p-4">
                 <p class="stat-label">Jumlah Guru</p>
@@ -41,7 +84,9 @@
               </div>
             </div>
           </div>
-          <div class="col-6 col-md-4">
+
+          <!-- 2. Jumlah Siswa -->
+          <div class="col-12 col-md-4">
             <div class="card stat-card shadow-sm">
               <div class="card-body stat-card-body p-4">
                 <p class="stat-label">Jumlah Siswa</p>
@@ -50,17 +95,66 @@
               </div>
             </div>
           </div>
+
+          <!-- 3. Siswa Masuk Hari Ini (Circular Progress) -->
           <div class="col-12 col-md-4">
             <div class="card stat-card shadow-sm">
-              <div class="card-body stat-card-body p-4">
-                <p class="stat-label">Siswa Masuk Hari Ini</p>
-                <div class="chart-container">
-                  <canvas id="attendanceChart"></canvas>
+              <div class="card-body stat-card-body p-3">
+                <p class="stat-label mb-2" style="font-size: 0.75rem; margin-bottom: 10px;">Siswa Masuk Hari Ini</p>
+                
+                <!-- Circular Progress Container -->
+                <div class="circular-progress-wrapper">
+                    <div class="circular-progress">
+                        <svg class="progress-ring" width="200" height="200" viewBox="0 0 200 200">
+                            <!-- Background Circle -->
+                            <circle class="progress-ring__circle-bg" 
+                                    stroke="rgba(255,255,255,0.05)" 
+                                    stroke-width="12"
+                                    fill="transparent"
+                                    r="90" 
+                                    cx="100" 
+                                    cy="100"/>
+                            
+                            <!-- Gradient Definition -->
+                            <defs>
+                                <linearGradient id="gradientColors" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#8b5cf6" />
+                                    <stop offset="50%" stop-color="#d946ef" />
+                                    <stop offset="100%" stop-color="#22c55e" />
+                                </linearGradient>
+                            </defs>
+                            
+                            <!-- Progress Circle -->
+                            <circle class="progress-ring__circle" 
+                                    stroke="url(#gradientColors)" 
+                                    stroke-width="12"
+                                    stroke-linecap="round"
+                                    fill="transparent"
+                                    r="90" 
+                                    cx="100" 
+                                    cy="100"
+                                    stroke-dasharray="565.48"
+                                    stroke-dashoffset="565.48"/>
+                        </svg>
+                        
+                        <!-- Center Content -->
+                        <div class="progress-content">
+                            <div class="progress-number">
+                                <span class="progress-current" id="siswaMasukCount">{{ $siswaMasukHariIni }}</span>
+                                <span class="progress-divider">/</span>
+                                <span class="progress-total" id="siswaTotalCount">{{ $siswa }}</span>
+                            </div>
+                            <div class="progress-label">present</div>
+                        </div>
+                    </div>
                 </div>
+                
               </div>
             </div>
           </div>
+
         </div>
+        <!-- End Stats Row -->
 
         <!-- Quick Access -->
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -110,7 +204,7 @@
           @endforeach
         </div>
 
-        <!-- Izin & Agenda Section -->
+        <!-- ================= IZIN & AGENDA (ORIGINAL LOGIC - UNCHANGED) ================= -->
         <div class="row g-3">
           <!-- Izin Menunggu -->
           <div class="col-md-6">
@@ -235,6 +329,7 @@
             </div>
           </div>
         </div>
+        <!-- End Izin & Agenda -->
 
       </div>
     </div>

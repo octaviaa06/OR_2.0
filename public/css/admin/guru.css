@@ -410,3 +410,418 @@ textarea.field-input { resize: vertical; min-height: 80px; }
     .guru-card-top { gap: 10px; }
     .guru-avatar { width: 44px; height: 44px; font-size: 15px; }
 }
+
+/* ========================================
+   ✨ GURU PAGE ENHANCEMENTS ✨
+   ======================================== */
+
+/* ----- 1. MAIN CONTENT BACKGROUND ----- */
+.guru-main {
+    position: relative;
+    overflow: hidden;
+}
+
+/* ----- 2. RADIAL GLOW ACCENTS ----- */
+.radial-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+    animation: glowPulse 12s ease-in-out infinite alternate;
+}
+
+.radial-glow.glow-1 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+    top: -150px; left: -100px;
+    animation-delay: 0s;
+}
+
+.radial-glow.glow-2 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+    bottom: -100px; right: -50px;
+    animation-delay: -4s;
+}
+
+.radial-glow.glow-3 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: -8s;
+}
+
+@keyframes glowPulse {
+    0% { opacity: 0.05; transform: scale(1); }
+    100% { opacity: 0.12; transform: scale(1.1); }
+}
+
+/* ----- 3. SUBTLE DOODLES (School Theme) ----- */
+.guru-bg-decorations {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.doodle {
+    position: absolute;
+    opacity: 0.04;
+    pointer-events: none;
+}
+
+/* Pencil */
+.doodle-pencil {
+    top: 15%; right: 8%;
+    width: 60px; height: 60px;
+    background: 
+        linear-gradient(135deg, transparent 45%, var(--primary) 45%, var(--primary) 55%, transparent 55%),
+        linear-gradient(45deg, transparent 48%, var(--warning) 48%, var(--warning) 52%, transparent 52%);
+    border-radius: 2px;
+    transform: rotate(-25deg);
+    animation: doodleFloat 20s ease-in-out infinite;
+}
+
+/* Book */
+.doodle-book {
+    bottom: 20%; left: 5%;
+    width: 50px; height: 40px;
+    border: 2px solid var(--primary);
+    border-radius: 4px 8px 8px 4px;
+    background: linear-gradient(to right, rgba(139,92,246,0.1), transparent);
+    animation: doodleFloat 18s ease-in-out infinite reverse;
+}
+.doodle-book::before {
+    content: '';
+    position: absolute;
+    left: 15px; top: 5px; bottom: 5px;
+    width: 1px;
+    background: var(--primary);
+    opacity: 0.5;
+}
+
+/* Star */
+.doodle-star {
+    top: 40%; left: 12%;
+    width: 30px; height: 30px;
+    background: var(--accent);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    animation: doodleTwinkle 4s ease-in-out infinite;
+}
+
+/* Ruler */
+.doodle-ruler {
+    bottom: 10%; right: 15%;
+    width: 80px; height: 20px;
+    border: 2px solid var(--primary);
+    border-radius: 3px;
+    background: repeating-linear-gradient(90deg, transparent, transparent 8px, var(--primary) 8px, var(--primary) 10px);
+    transform: rotate(15deg);
+    animation: doodleFloat 22s ease-in-out infinite;
+}
+
+/* Apple */
+.doodle-apple {
+    top: 25%; left: 20%;
+    width: 35px; height: 35px;
+    background: var(--danger);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    animation: doodleFloat 16s ease-in-out infinite reverse;
+}
+.doodle-apple::before {
+    content: '';
+    position: absolute;
+    top: -8px; left: 50%;
+    width: 8px; height: 10px;
+    background: #22c55e;
+    border-radius: 0 0 4px 4px;
+    transform: translateX(-50%);
+}
+
+@keyframes doodleFloat {
+    0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+    50% { transform: translateY(-10px) rotate(calc(var(--r, 0deg) + 5deg)); }
+}
+
+@keyframes doodleTwinkle {
+    0%, 100% { opacity: 0.03; transform: scale(0.9); }
+    50% { opacity: 0.06; transform: scale(1.1); }
+}
+
+/* ----- 4. CHIP FILTERS ----- */
+.filter-chips-wrapper {
+    margin: -10px 0 20px;
+}
+
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 4px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.chip:hover {
+    background: var(--glass-hover);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: var(--text-main);
+    transform: translateY(-2px);
+}
+
+.chip-active, .chip.active {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.chip-icon {
+    font-size: 0.9rem;
+}
+
+/* ----- 5. GURU CARD ENHANCEMENTS ----- */
+.guru-card {
+    /* Existing styles + enhanced hover */
+    transition: var(--transition), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.guru-card:hover {
+    transform: translateY(-8px) !important;
+    border-color: rgba(139, 92, 246, 0.6) !important;
+    box-shadow: 
+        0 20px 40px rgba(0,0,0,0.4),
+        0 0 0 1px rgba(139, 92, 246, 0.3),
+        0 0 30px rgba(139, 92, 246, 0.15) !important;
+}
+
+.guru-card:hover .guru-avatar--colored {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-color: transparent;
+    color: white;
+    transform: scale(1.05);
+}
+
+/* ----- 6. COLORED INFO ICONS ----- */
+.info-row-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.info-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    transition: var(--transition);
+}
+
+/* Email - Blue */
+.icon-email { color: #3b82f6; }
+.info-email:hover .icon-email { 
+    color: #60a5fa; 
+    filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.5));
+}
+
+/* Phone - Green */
+.icon-phone { color: #22c55e; }
+.info-phone:hover .icon-phone { 
+    color: #4ade80; 
+    filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.5));
+}
+
+/* Class - Purple */
+.icon-class { color: #8b5cf6; }
+.info-class:hover .icon-class { 
+    color: #a78bfa; 
+    filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.5));
+}
+
+/* Address - Pink */
+.icon-address { color: #d946ef; }
+.info-address:hover .icon-address { 
+    color: #e879f9; 
+    filter: drop-shadow(0 0 4px rgba(217, 70, 239, 0.5));
+}
+
+/* ----- 7. EMPTY STATE ILLUSTRATION ----- */
+.empty-state {
+    padding: 60px 20px;
+    background: var(--glass-bg);
+    border: 1px dashed var(--glass-border);
+    border-radius: 16px;
+    margin: 20px 0;
+}
+
+.empty-illustration {
+    animation: emptyFloat 4s ease-in-out infinite;
+}
+
+@keyframes emptyFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.empty-state .btn-add.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+/* Hide decorations on mobile for performance */
+@media (max-width: 768px) {
+    .guru-bg-decorations,
+    .radial-glow {
+        display: none;
+    }
+    
+    .filter-chips {
+        justify-content: center;
+    }
+    
+    .chip {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+}
+/* ========================================
+   ✨ GURU PAGE: FILLER & UI ENHANCEMENTS ✨
+   ======================================== */
+
+/* ----- 1. BACKGROUND FILLER (Glow + Doodles) ----- */
+.guru-main { position: relative; overflow: hidden; }
+
+.guru-bg-filler {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 0; overflow: hidden;
+}
+
+/* Radial Glows - Large & Faint */
+.radial-glow {
+    position: absolute; border-radius: 50%;
+    filter: blur(100px); opacity: 0.06;
+    animation: glowPulse 15s ease-in-out infinite alternate;
+}
+.radial-glow.glow-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+    top: -200px; left: -150px;
+}
+.radial-glow.glow-2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+    bottom: -150px; right: -100px;
+    animation-delay: -5s;
+}
+@keyframes glowPulse {
+    0% { opacity: 0.04; transform: scale(1); }
+    100% { opacity: 0.08; transform: scale(1.05); }
+}
+
+/* Subtle Doodles - Opacity 3-5% */
+.doodle {
+    position: absolute; pointer-events: none;
+    animation: doodleFloat 25s ease-in-out infinite;
+}
+.doodle-1 { top: 10%; right: 5%; width: 120px; height: 120px; animation-delay: 0s; }
+.doodle-2 { bottom: 15%; left: 3%; width: 100px; height: 100px; animation-delay: -8s; }
+.doodle-3 { top: 45%; right: 10%; width: 90px; height: 90px; animation-delay: -15s; }
+
+@keyframes doodleFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(2deg); }
+}
+
+/* ----- 2. COLORED INFO ICONS ----- */
+.info-icon { transition: var(--transition); }
+
+/* Email - Blue */
+.icon-email { color: #3b82f6; }
+.info-email:hover .icon-email { 
+    color: #60a5fa; 
+    filter: drop-shadow(0 0 5px rgba(59, 130, 246, 0.5));
+}
+
+/* Phone - Green */
+.icon-phone { color: #22c55e; }
+.info-phone:hover .icon-phone { 
+    color: #4ade80; 
+    filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.5));
+}
+
+/* Class - Purple */
+.icon-class { color: #8b5cf6; }
+.info-class:hover .icon-class { 
+    color: #a78bfa; 
+    filter: drop-shadow(0 0 5px rgba(139, 92, 246, 0.5));
+}
+
+/* Address - Pink */
+.icon-address { color: #d946ef; }
+.info-address:hover .icon-address { 
+    color: #e879f9; 
+    filter: drop-shadow(0 0 5px rgba(217, 70, 239, 0.5));
+}
+
+/* ----- 3. HOVER EFFECT: Lift Up + Glowing Border ----- */
+.guru-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.guru-card:hover {
+    transform: translateY(-8px) !important;
+    border-color: rgba(139, 92, 246, 0.7) !important;
+    box-shadow: 
+        0 20px 40px rgba(0,0,0,0.4),
+        0 0 0 1px rgba(139, 92, 246, 0.3),
+        0 0 35px rgba(139, 92, 246, 0.2) !important;
+}
+.guru-card:hover .guru-avatar {
+    transform: scale(1.05);
+    border-color: var(--primary);
+}
+
+/* ----- 4. EMPTY STATE WITH ILLUSTRATION ----- */
+.empty-state-wrapper {
+    text-align: center;
+    padding: 50px 20px;
+    background: var(--glass-bg);
+    border: 1px dashed var(--glass-border);
+    border-radius: 16px;
+    margin: 20px 0;
+}
+.empty-illustration {
+    width: 180px; height: 180px; margin: 0 auto 24px;
+    animation: emptyFloat 4s ease-in-out infinite;
+}
+@keyframes emptyFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+.empty-state-wrapper .btn-add.btn-sm {
+    padding: 8px 16px; font-size: 0.9rem;
+}
+
+/* ----- 5. RESPONSIVE: Hide Heavy Effects on Mobile ----- */
+@media (max-width: 768px) {
+    .guru-bg-filler { display: none; }
+}

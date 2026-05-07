@@ -267,3 +267,55 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+// ===== QUICK STATS CALCULATION ✨ =====
+function updateQuickStats() {
+    const items = document.querySelectorAll('.siswa-item');
+    let total = 0, laki = 0, perempuan = 0;
+    
+    items.forEach(item => {
+        // Hanya hitung yang visible (tidak di-filter)
+        if (item.style.display !== 'none') {
+            total++;
+            const gender = item.dataset.gender?.toLowerCase();
+            if (gender === 'laki-laki') laki++;
+            else if (gender === 'perempuan') perempuan++;
+        }
+    });
+    
+    // Update DOM dengan animasi counting
+    animateCount('statTotal', total);
+    animateCount('statLaki', laki);
+    animateCount('statPerempuan', perempuan);
+}
+
+// Helper: Animate number counting
+function animateCount(elementId, target) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    const current = parseInt(el.textContent) || 0;
+    if (current === target) return;
+    
+    const duration = 400;
+    const start = performance.now();
+    
+    function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const value = Math.round(current + (target - current) * easeOut);
+        el.textContent = value;
+        
+        if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+}
+
+// Update stats when search/filter changes
+document.getElementById('searchInput')?.addEventListener('input', updateQuickStats);
+document.getElementById('filterKelas')?.addEventListener('change', () => {
+    setTimeout(updateQuickStats, 100); // Delay untuk DOM update
+});
+
+// Initial call
+document.addEventListener('DOMContentLoaded', updateQuickStats);
