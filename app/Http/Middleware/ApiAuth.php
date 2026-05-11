@@ -22,9 +22,10 @@ class ApiAuth
 
         // Decode token: base64(id_akun|timestamp|APP_KEY)
         $decoded = base64_decode($token);
-        $parts   = explode('|', $decoded);
+        // Limit ke 3 bagian — APP_KEY tidak mengandung | tapi aman
+        $parts   = explode('|', $decoded, 3);
 
-        if (count($parts) !== 3) {
+        if (count($parts) < 3) {
             return response()->json([
                 'success' => false,
                 'message' => 'Token tidak valid.',

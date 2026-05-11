@@ -18,9 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'       => \App\Http\Middleware\CheckRole::class,
             'api.auth'   => \App\Http\Middleware\ApiAuth::class,
         ]);
-
-        // Pastikan API routes tidak pakai session/cookie web
-        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
