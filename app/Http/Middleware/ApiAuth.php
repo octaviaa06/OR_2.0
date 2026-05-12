@@ -20,43 +20,21 @@ class ApiAuth
             ], 401);
         }
 
-        // Decode token: base64(id_akun|timestamp|APP_KEY)
-        $decoded = base64_decode($token);
-        // Limit ke 3 bagian — APP_KEY tidak mengandung | tapi aman
-        $parts   = explode('|', $decoded, 3);
-
-        if (count($parts) < 3) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak valid.',
-            ], 401);
-        }
-
-        [$idAkun, $timestamp, $key] = $parts;
-
-        // Validasi APP_KEY
-        if ($key !== env('APP_KEY')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token tidak valid.',
-            ], 401);
-        }
-
-        // Token expired setelah 30 hari
-        if ((time() - (int) $timestamp) > (60 * 60 * 24 * 30)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token sudah kadaluarsa. Silakan login ulang.',
-            ], 401);
-        }
-
-        // Cek akun masih ada di DB
-        $akun = DB::table('akun')->where('id_akun', (int) $idAkun)->first();
+        // Cari akun berdasarkan token yang tersimpan di DB
+        $akun = DB::table('akun')->where('token', $token)->first();
 
         if (!$akun) {
             return response()->json([
                 'success' => false,
-                'message' => 'Akun tidak ditemukan.',
+                'message' => 'Token tidak valid.',
+            ], 401);
+        }
+
+        // Cek token expired
+        if ($akun->token_expired_at && now()->gt($akun->token_expired_at)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token sudah kadaluarsa. Silakan login ulang.',
             ], 401);
         }
 

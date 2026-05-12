@@ -56,8 +56,15 @@ class AuthController extends Controller
             $siswa = DB::table('siswa')->where('id_siswa', $akun->id_siswa)->first();
         }
 
-        // Generate token: base64(id_akun|timestamp|APP_KEY)
-        $token = base64_encode($akun->id_akun . '|' . time() . '|' . env('APP_KEY'));
+        // Generate token: base64(id_akun|timestamp|random)
+        $token     = base64_encode($akun->id_akun . '|' . time() . '|' . bin2hex(random_bytes(16)));
+        $expiredAt = now()->addDays(30);
+
+        // Simpan token ke DB
+        DB::table('akun')->where('id_akun', $akun->id_akun)->update([
+            'token'            => $token,
+            'token_expired_at' => $expiredAt,
+        ]);
 
         return response()->json([
             'success' => true,

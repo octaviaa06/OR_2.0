@@ -91,7 +91,19 @@
                 @csrf
 
                 @if(session('error'))
-                    <div class="error-message">{{ session('error') }}</div>
+                    <div class="error-message" id="errorMessage">
+                        <div class="error-content">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <span>{{ session('error') }}</span>
+                        </div>
+                        <button type="button" class="error-close" onclick="dismissError()">✕</button>
+                        <div class="error-progress" id="errorProgress"></div>
+                    </div>
                 @endif
 
                 <!-- Username -->
@@ -172,6 +184,33 @@
         document.querySelector('.login-form').addEventListener('submit', function() {
             document.getElementById('submitBtn').classList.add('loading');
         });
+
+        // Error auto-dismiss
+        function dismissError() {
+            const el = document.getElementById('errorMessage');
+            if (!el) return;
+            el.classList.add('error-hiding');
+            setTimeout(() => el.remove(), 400);
+        }
+
+        (function () {
+            const el = document.getElementById('errorMessage');
+            if (!el) return;
+
+            // Trigger shake
+            el.classList.add('error-shake');
+            setTimeout(() => el.classList.remove('error-shake'), 600);
+
+            // Progress bar countdown (4 detik)
+            const bar = document.getElementById('errorProgress');
+            if (bar) {
+                bar.style.transition = 'width 4s linear';
+                setTimeout(() => { bar.style.width = '0%'; }, 50);
+            }
+
+            // Auto dismiss setelah 4 detik
+            setTimeout(dismissError, 4000);
+        })();
 
         // Parallax Effect
         document.addEventListener('DOMContentLoaded', () => {
