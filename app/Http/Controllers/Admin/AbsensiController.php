@@ -144,13 +144,67 @@ class AbsensiController extends Controller
             }
         }
 
+        // Hitung hari efektif dan persentase kehadiran untuk filter bulan
+        $hariEfektif = null;
+        if ($request->filter_type === 'bulan') {
+            $hariEfektif = $this->hitungHariEfektif($startDate, $endDate);
+
+            foreach ($statistics as $id => &$stat) {
+                $jumlahHadir = $stat['Hadir'];
+                $stat['persentase_kehadiran'] = $hariEfektif > 0
+                    ? round(($jumlahHadir / $hariEfektif) * 100, 2)
+                    : 0;
+            }
+            unset($stat);
+        }
+
         return response()->json([
-            'status'     => 'success',
-            'kelas'      => $request->kelas,
-            'start_date' => $startDate,
-            'end_date'   => $endDate,
-            'data'       => array_values($statistics),
+            'status'       => 'success',
+            'kelas'        => $request->kelas,
+            'start_date'   => $startDate,
+            'end_date'     => $endDate,
+            'filter_type'  => $request->filter_type,
+            'hari_efektif' => $hariEfektif,
+            'data'         => array_values($statistics),
         ]);
+    }
+
+    /**
+     * Hitung hari efektif dalam rentang tanggal:
+     * Total hari - hari Minggu - hari libur (dari tabel hari_libur, bukan Minggu)
+     */
+    private function hitungHariEfektif(string $startDate, string $endDate): int
+    {
+        $start = new \DateTime($startDate);
+        $end   = new \DateTime($endDate);
+        $total = 0;
+        $minggu = 0;
+
+        $current = clone $start;
+        while ($current <= $end) {
+            $total++;
+            if ((int)$current->format('w') === 0) { // 0 = Minggu
+                $minggu++;
+            }
+            $current->modify('+1 day');
+        }
+
+        // Ambil hari libur dalam rentang yang bukan hari Minggu
+        try {
+            $hariLibur = DB::table('hari_libur')
+                ->whereBetween('tanggal', [$startDate, $endDate])
+                ->pluck('tanggal')
+                ->filter(function ($tgl) {
+                    return (int)(new \DateTime($tgl))->format('w') !== 0; // bukan Minggu
+                })
+                ->count();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Tabel hari_libur tidak dapat diakses: ' . $e->getMessage());
+            $hariLibur = 0;
+        }
+
+        $efektif = $total - $minggu - $hariLibur;
+        return max(1, $efektif); // minimal 1 agar tidak ada pembagian nol
     }
 
     private function getDateRange(string $type, string $date): array

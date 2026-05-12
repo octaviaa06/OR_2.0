@@ -12,6 +12,11 @@ use App\Http\Controllers\Guru\GuruDashboardController;
 use App\Http\Controllers\Guru\SiswaController as GuruSiswaController;
 use App\Http\Controllers\Guru\AbsensiController as GuruAbsensiController;
 use App\Http\Controllers\LogoutController;
+use App\Http\Controllers\AttendanceReportController;
+
+
+Route::get('/rekap-absensi', [AttendanceReportController::class, 'index'])
+     ->name('attendance.report');
 
 Route::get('/logout-confirm', [LogoutController::class, 'show'])->name('logout.confirm');
 Route::post('/logout-confirm', [LogoutController::class, 'process'])->name('logout.process');

@@ -3,54 +3,61 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class LogoutController extends Controller
 {
+    /**
+     * Tampilkan halaman konfirmasi logout
+     */
     public function show(Request $request)
     {
-        $from = $request->get('from', '');
+        $from = $request->query('from', '');
         return view('auth.logout_confirm', compact('from'));
     }
 
+    /**
+     * Proses logout atau batalkan
+     */
     public function process(Request $request)
     {
         if ($request->has('confirm_logout')) {
-
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return redirect('/login');
+            Session::flush();
+            return redirect()->route('login');
         }
 
         if ($request->has('cancel_logout')) {
+            $role = Session::get('role', '');
+            $from = $request->input('from', '');
 
-            $redirect_map = [
-                // ADMIN
-                'dashboard admin' => '/dashboard_admin/home_admin',
-                'DataGuru'        => '/admin/data-guru',
-                'data'            => '/admin/data-siswa',
-                'absensi'         => '/admin/absensi',
-                'perizinan_admin' => '/admin/perizinan',
-                'kalender'        => '/admin/kalender',
-
-                // GURU
-                'dashboard guru'  => '/dashboard_guru/home_guru',
-                'data_siswa'      => '/guru/data-siswa',
-                'absensi_siswa'   => '/guru/absensi',
-                'perizinan_siswa' => '/guru/perizinan',
-                'kalender guru'   => '/guru/kalender',
+            // Map 'from' ke route name yang sesuai
+            $redirectMap = [
+                // Admin
+                'dashboard_admin' => 'admin.dashboard',
+                'DataGuru'        => 'admin.guru.index',
+                'data_siswa'      => 'admin.siswa.index',
+                'absensi'         => 'admin.absensi.index',
+                'perizinan_admin' => 'admin.perizinan.index',
+                'kalender'        => 'admin.kalender.index',
+                // Guru
+                'dashboard_guru'  => 'guru.dashboard',
+                'perizinan_siswa' => 'guru.dashboard',
+                'kalender_guru'   => 'guru.dashboard',
             ];
 
-            $role = session('role');
-            $default = $role === 'guru'
-                ? '/dashboard_guru/home_guru'
-                : '/dashboard_admin/home_admin';
+            if ($from && isset($redirectMap[$from])) {
+                return redirect()->route($redirectMap[$from]);
+            }
 
-            $target = $redirect_map[$request->from] ?? $default;
+            // Default redirect berdasarkan role
+            if ($role === 'guru') {
+                return redirect()->route('guru.dashboard');
+            }
 
-            return redirect($target);
+            return redirect()->route('admin.dashboard');
         }
+
+        // Fallback jika tidak ada tombol yang ditekan
+        return redirect()->route('login');
     }
 }

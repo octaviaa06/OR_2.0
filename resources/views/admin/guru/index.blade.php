@@ -208,8 +208,7 @@
                                     <option value="" disabled selected>-- Pilih Kelas --</option>
                                     <option value="A">Kelas A</option>
                                     <option value="B">Kelas B</option>
-                                    <option value="C">Kelas C</option>
-                                    <option value="D">Kelas D</option>
+                                    
                                 </select>
                                 <span class="field-error" id="kelasError"></span>
                             </div>
