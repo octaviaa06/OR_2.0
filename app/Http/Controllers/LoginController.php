@@ -38,27 +38,31 @@ class LoginController extends Controller
             return back()->with('error', 'Username atau password salah')->withInput();
         }
 
-        // Support plain text (legacy) dan hashed password
-        $valid = ($akun->password === $password)
-            || Hash::check($password, $akun->password);
+        $valid = ($akun->password === $password);
+
+        if (!$valid) {
+            $info = password_get_info($akun->password);
+            if ($info['algoName'] !== 'unknown') {
+                if (Hash::check($password, $akun->password)) {
+                    $valid = true;
+                }
+            }
+        }
 
         if (!$valid) {
             return back()->with('error', 'Username atau password salah')->withInput();
         }
 
-        // Hanya admin dan guru yang bisa login di web
         if (!in_array($akun->role, ['admin', 'guru'])) {
             return back()->with('error', 'Akses ditolak. Gunakan aplikasi mobile untuk login sebagai orang tua.')->withInput();
         }
 
-        // Set session
         Session::put('login',      true);
         Session::put('id_akun',    $akun->id_akun);
         Session::put('username',   $akun->username);
         Session::put('role',       $akun->role);
         Session::put('login_time', time());
 
-        // Khusus guru — ambil data kelas dari tabel guru
         if ($akun->role === 'guru' && $akun->id_guru) {
             $guru = DB::table('guru')->where('id_guru', $akun->id_guru)->first();
             if ($guru) {

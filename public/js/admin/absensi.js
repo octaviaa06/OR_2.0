@@ -173,22 +173,39 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     function generatePDF(data) {
+        const isBulan = data.filter_type === 'bulan';
         const periode = data.start_date === data.end_date
             ? new Date(data.start_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
             : `${new Date(data.start_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })} — ${new Date(data.end_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`;
 
         let rows = '';
-        let totH = 0, totI = 0, totS = 0, totA = 0;
+        let totH = 0, totI = 0, totS = 0, totA = 0, totPersen = 0;
         data.data.forEach((s, i) => {
             totH += s.Hadir; totI += s.Izin; totS += s.Sakit; totA += s.Alpa;
-            rows += `<tr><td>${i + 1}</td><td style="text-align:left">${s.nama}</td><td>${s.Hadir}</td><td>${s.Izin}</td><td>${s.Sakit}</td><td>${s.Alpa}</td></tr>`;
+            const persen = isBulan ? (s.persentase_kehadiran ?? 0) : null;
+            if (isBulan) totPersen += persen;
+
+            const persenCell = isBulan
+                ? `<td style="font-weight:600;color:${persen >= 80 ? '#16a34a' : persen >= 60 ? '#d97706' : '#dc2626'}">${persen.toFixed(2)}%</td>`
+                : '';
+            rows += `<tr><td>${i + 1}</td><td style="text-align:left">${s.nama}</td><td>${s.Hadir}</td><td>${s.Izin}</td><td>${s.Sakit}</td><td>${s.Alpa}</td>${persenCell}</tr>`;
         });
+
+        const jumlahSiswa = data.data.length;
+        const rataRata    = jumlahSiswa > 0 ? (totPersen / jumlahSiswa).toFixed(2) : '0.00';
+
+        const thPersen  = isBulan ? '<th>% Kehadiran</th>' : '';
+        const totPersen2 = isBulan ? `<td style="color:#16a34a;font-weight:700">${rataRata}%</td>` : '';
+        const infoHariEfektif = isBulan && data.hari_efektif
+            ? `<div class="info-efektif">Hari Efektif Bulan Ini: <strong>${data.hari_efektif} hari</strong></div>`
+            : '';
 
         const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rekap Absensi</title>
         <style>
             body{font-family:Arial,sans-serif;margin:30px;color:#333}
             h1{text-align:center;color:#5b21b6;margin:0}
-            .sub{text-align:center;font-size:13px;margin:6px 0 24px}
+            .sub{text-align:center;font-size:13px;margin:6px 0 10px}
+            .info-efektif{text-align:center;font-size:12px;margin:0 0 20px;color:#5b21b6;background:#ede9fe;padding:6px 12px;border-radius:6px;display:inline-block;width:auto;margin:0 auto 20px;display:block}
             table{width:100%;border-collapse:collapse;margin-top:10px}
             th{background:#5b21b6;color:white;padding:10px;text-align:center;font-size:12px}
             td{padding:8px;border:1px solid #ddd;text-align:center;font-size:11px}
@@ -197,8 +214,9 @@ document.addEventListener('DOMContentLoaded', function () {
         </style></head><body>
         <h1>REKAP ABSENSI</h1>
         <div class="sub"><strong>Kelas:</strong> ${data.kelas} &nbsp;|&nbsp; <strong>Periode:</strong> ${periode}</div>
-        <table><thead><tr><th>No</th><th>Nama Murid</th><th>Hadir</th><th>Izin</th><th>Sakit</th><th>Alpa</th></tr></thead>
-        <tbody>${rows}<tr class="total"><td colspan="2">TOTAL</td><td>${totH}</td><td>${totI}</td><td>${totS}</td><td>${totA}</td></tr></tbody></table>
+        ${infoHariEfektif}
+        <table><thead><tr><th>No</th><th>Nama Murid</th><th>Hadir</th><th>Izin</th><th>Sakit</th><th>Alpa</th>${thPersen}</tr></thead>
+        <tbody>${rows}<tr class="total"><td colspan="2">TOTAL / RATA-RATA</td><td>${totH}</td><td>${totI}</td><td>${totS}</td><td>${totA}</td>${totPersen2}</tr></tbody></table>
         <div class="footer">Dicetak: ${new Date().toLocaleString('id-ID')}</div>
         </body></html>`;
 
