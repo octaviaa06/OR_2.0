@@ -3,8 +3,8 @@
 @section('title', 'Absensi Siswa | OrtuConnect')
 
 @section('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/sidebar.css') }}">
-<link rel="stylesheet" href="{{ asset('css/admin/absensi.css') }}">
+<link rel="stylesheet" href="{{ asset('css/guru/sidebar.css') }}">
+<link rel="stylesheet" href="{{ asset('css/guru/absensi.css') }}">
 @endsection
 
 @section('content')

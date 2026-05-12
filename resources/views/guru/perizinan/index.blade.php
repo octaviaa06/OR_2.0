@@ -3,8 +3,8 @@
 @section('title', 'Perizinan | OrtuConnect')
 
 @section('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/sidebar.css') }}">
-<link rel="stylesheet" href="{{ asset('css/admin/perizinan.css') }}">
+<link rel="stylesheet" href="{{ asset('css/guru/sidebar.css') }}">
+<link rel="stylesheet" href="{{ asset('css/guru/perizinan.css') }}">
 @endsection
 
 @section('content')
