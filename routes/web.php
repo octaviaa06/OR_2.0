@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\KalenderController;
 use App\Http\Controllers\Guru\GuruDashboardController;
 use App\Http\Controllers\Guru\SiswaController as GuruSiswaController;
 use App\Http\Controllers\Guru\AbsensiController as GuruAbsensiController;
+use App\Http\Controllers\Guru\PerizinanController as GuruPerizinanController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\AttendanceReportController;
 
@@ -76,4 +77,8 @@ Route::middleware(['auth.check', 'role:guru'])->prefix('guru')->name('guru.')->g
     Route::get('/absensi', [GuruAbsensiController::class, 'index'])->name('absensi.index');
     Route::post('/absensi/simpan', [GuruAbsensiController::class, 'simpan'])->name('absensi.simpan');
     Route::post('/absensi/export', [GuruAbsensiController::class, 'exportData'])->name('absensi.export');
+
+    // Perizinan
+    Route::get('/perizinan', [GuruPerizinanController::class, 'index'])->name('perizinan.index');
+    Route::put('/perizinan/update', [GuruPerizinanController::class, 'updateStatus'])->name('perizinan.update');
 });

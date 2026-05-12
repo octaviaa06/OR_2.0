@@ -72,8 +72,8 @@
             <div class="row g-3 mb-4">
                 @php
                 $quickLinks = [
-                    ['url' => '#', 'icon' => asset('images/Absensi Biru.png'), 'text' => 'Kelola Absensi'],
-                    ['url' => '#', 'icon' => asset('images/Perizinan Biru.png'), 'text' => 'Proses Perizinan'],
+                    ['url' => route('guru.absensi.index'), 'icon' => asset('images/Absensi Biru.png'), 'text' => 'Kelola Absensi'],
+                    ['url' => route('guru.perizinan.index'), 'icon' => asset('images/Perizinan Biru.png'), 'text' => 'Proses Perizinan'],
                     ['url' => '#', 'icon' => asset('images/Kalender_biru.png'), 'text' => 'Lihat Kalender'],
                 ];
                 @endphp
