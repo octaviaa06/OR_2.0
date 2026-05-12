@@ -95,7 +95,11 @@ class AuthController extends Controller
         if ($idAkun) {
             DB::table('akun')
                 ->where('id_akun', $idAkun)
-                ->update(['fcm_token' => null]);
+                ->update([
+                    'fcm_token'        => null,
+                    'token'            => null,
+                    'token_expired_at' => null,
+                ]);
         }
 
         return response()->json([
