@@ -43,7 +43,33 @@ class SiswaController extends Controller
 
         $validated['kelas'] = strtoupper(preg_replace('/^kelas\s+/i', '', trim($validated['kelas'])));
 
-        DB::table('siswa')->insert($validated);
+        $idSiswa = DB::table('siswa')->insertGetId($validated);
+
+        // Generate akun otomatis untuk orang tua:
+        // username = "ortu_" + nama awal siswa (lowercase)
+        // password = nama awal ortu (lowercase) + 3 digit terakhir no_telp_ortu
+        $namaAwalSiswa = strtolower(explode(' ', trim($validated['nama_siswa']))[0]);
+        $namaAwalOrtu  = strtolower(explode(' ', trim($validated['nama_ortu']))[0]);
+        $telpAkhir     = substr($validated['no_telp_ortu'], -3);
+
+        $usernameBase = 'ortu_' . $namaAwalSiswa;
+        $username     = $usernameBase;
+        $counter      = 1;
+
+        // Pastikan username unik
+        while (DB::table('akun')->where('username', $username)->exists()) {
+            $username = $usernameBase . $counter;
+            $counter++;
+        }
+
+        $password = $namaAwalOrtu . $telpAkhir;
+
+        DB::table('akun')->insert([
+            'id_siswa' => $idSiswa,
+            'username' => $username,
+            'password' => $password,
+            'role'     => 'ortu',
+        ]);
 
         return response()->json(['success' => true, 'message' => 'Data siswa berhasil ditambahkan']);
     }

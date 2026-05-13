@@ -1,200 +1,412 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // ===== KONFIGURASI =====
     const cfg = window.kalenderConfig || {};
+    
+    // Validasi config wajib
+    if (!cfg.csrf) {
+        console.warn('⚠️ CSRF token tidak ditemukan, mencoba ambil dari meta tag...');
+    }
+    
     const headers = {
         'Content-Type': 'application/json',
-        'Accept':       'application/json',
-        'X-CSRF-TOKEN': cfg.csrf || '',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': cfg.csrf || document.querySelector('meta[name="csrf-token"]')?.content || '',
     };
 
     let currentHapusId = null;
 
-    const modalAgenda = new bootstrap.Modal(document.getElementById('modalAgenda'));
-    const modalDetail = new bootstrap.Modal(document.getElementById('modalDetail'));
-    const modalHapus  = new bootstrap.Modal(document.getElementById('modalHapus'));
-    const modalSukses = new bootstrap.Modal(document.getElementById('modalSukses'));
+    // ===== INIT MODAL (Safe Check) =====
+    const modalAgendaEl = document.getElementById('modalAgenda');
+    const modalDetailEl = document.getElementById('modalDetail');
+    const modalHapusEl  = document.getElementById('modalHapus');
+    const modalSuksesEl = document.getElementById('modalSukses');
 
-    // ===== TOAST =====
+    const modalAgenda = modalAgendaEl ? new bootstrap.Modal(modalAgendaEl) : null;
+    const modalDetail = modalDetailEl ? new bootstrap.Modal(modalDetailEl) : null;
+    const modalHapus  = modalHapusEl  ? new bootstrap.Modal(modalHapusEl)  : null;
+    const modalSukses = modalSuksesEl ? new bootstrap.Modal(modalSuksesEl) : null;
+
+    // ===== TOAST NOTIFICATION =====
     function showToast(msg, type = 'success') {
         const t = document.getElementById('toast');
-        if (!t) return;
+        if (!t) {
+            console.log(`[${type.toUpperCase()}] ${msg}`);
+            return;
+        }
         t.textContent = msg;
-        t.className = `show ${type}`;
-        setTimeout(() => t.classList.remove('show'), 3500);
-    }
-
-    // ===== MODAL SUKSES =====
-    function showSukses(title, message, actionType = '') {
-        document.getElementById('suksesTitle').textContent   = title;
-        document.getElementById('suksesMessage').textContent = message;
-        modalSukses.show();
+        t.className = `toast show ${type}`;
+        t.style.display = 'block';
         setTimeout(() => {
-            modalSukses.hide();
-            setTimeout(() => location.reload(), 300);
-        }, 2500);
+            t.classList.remove('show');
+            t.style.display = 'none';
+        }, 3500);
     }
 
-    // ===== RESET FORM =====
+    // ===== MODAL SUKSES + AUTO REFRESH =====
+    function showSukses(title, message) {
+        const titleEl = document.getElementById('suksesTitle');
+        const msgEl = document.getElementById('suksesMessage');
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        
+        if (modalSukses) {
+            modalSukses.show();
+            setTimeout(() => {
+                modalSukses.hide();
+                setTimeout(() => location.reload(), 300);
+            }, 2000);
+        } else {
+            showToast(message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        }
+    }
+
+    // ===== RESET FORM AGENDA =====
     function resetForm() {
-        document.getElementById('agendaId').value       = '';
-        document.getElementById('agendaNama').value     = '';
-        document.getElementById('agendaTanggal').value  = cfg.selectedDate || '';
-        document.getElementById('agendaDeskripsi').value = '';
-        document.getElementById('namaError').classList.remove('show');
-        document.getElementById('tanggalError').classList.remove('show');
-        document.getElementById('agendaNama').classList.remove('is-invalid');
-        document.getElementById('agendaTanggal').classList.remove('is-invalid');
+        const fields = ['agendaId', 'agendaNama', 'agendaTanggal', 'agendaDeskripsi'];
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (id === 'agendaId') {
+                    el.value = '';
+                } else if (id === 'agendaTanggal') {
+                    el.value = cfg.selectedDate || '';
+                } else {
+                    el.value = '';
+                }
+                el.classList.remove('is-invalid');
+            }
+        });
+        
+        ['namaError', 'tanggalError'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = '';
+                el.classList.remove('show');
+            }
+        });
     }
 
-    // ===== BUKA MODAL TAMBAH =====
+    // ===== BUKA MODAL TAMBAH AGENDA =====
     document.getElementById('btnTambahAgenda')?.addEventListener('click', () => {
         resetForm();
-        document.getElementById('agendaModalLabel').textContent = 'Tambah Agenda';
+        const label = document.getElementById('agendaModalLabel');
+        if (label) label.textContent = 'Tambah Agenda';
+        
         const btn = document.getElementById('btnSimpanAgenda');
-        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Simpan`;
-        modalAgenda.show();
+        if (btn) {
+            btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Simpan`;
+        }
+        modalAgenda?.show();
     });
 
-    // ===== RESET MODAL SAAT DITUTUP =====
-    document.getElementById('modalAgenda')?.addEventListener('hidden.bs.modal', resetForm);
+    // ===== RESET FORM SAAT MODAL DITUTUP =====
+    modalAgendaEl?.addEventListener('hidden.bs.modal', resetForm);
 
-    // ===== LIHAT DETAIL =====
+    // ===== LIHAT DETAIL AGENDA =====
     window.lihatDetailAgenda = function (agenda) {
-        document.getElementById('detailNama').textContent     = agenda.nama_kegiatan || '—';
-        document.getElementById('detailTanggal').textContent  = formatTanggal(agenda.tanggal);
-        document.getElementById('detailDeskripsi').textContent = agenda.deskripsi || 'Tidak ada deskripsi';
-        modalDetail.show();
+        if (!agenda) return;
+        
+        const fields = {
+            'detailNama': agenda.nama_kegiatan || '—',
+            'detailTanggal': formatTanggal(agenda.tanggal),
+            'detailDeskripsi': agenda.deskripsi || 'Tidak ada deskripsi'
+        };
+        
+        Object.entries(fields).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        });
+        
+        modalDetail?.show();
     };
 
     // ===== EDIT AGENDA =====
     window.editAgenda = async function (id) {
-        if (!id) { showToast('ID Agenda tidak valid', 'error'); return; }
+        console.log('✏️ Edit agenda ID:', id);
+        
+        if (!id || isNaN(parseInt(id))) { 
+            showToast('ID Agenda tidak valid', 'error'); 
+            return; 
+        }
+        
+        if (!cfg.showUrl) {
+            showToast('Konfigurasi URL tidak lengkap', 'error');
+            return;
+        }
+
+        const btnSimpan = document.getElementById('btnSimpanAgenda');
+        if (btnSimpan) {
+            btnSimpan.disabled = true;
+            btnSimpan.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Memuat...';
+        }
+
         try {
-            const res  = await fetch(`${cfg.showUrl}?id=${id}`, { headers });
+            const res = await fetch(`${cfg.showUrl}?id=${id}`, { headers });
+            
+            if (res.status === 419) {
+                showToast('Sesi expired, silakan refresh halaman', 'error');
+                return;
+            }
+            
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            
             const data = await res.json();
+            
             if (data.status === 'success' && data.data) {
                 const a = data.data;
-                document.getElementById('agendaId').value        = a.id;
-                document.getElementById('agendaNama').value      = a.nama_kegiatan;
-                document.getElementById('agendaTanggal').value   = a.tanggal;
-                document.getElementById('agendaDeskripsi').value = a.deskripsi || '';
-                document.getElementById('agendaModalLabel').textContent = 'Edit Agenda';
-                const btn = document.getElementById('btnSimpanAgenda');
-                btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Perbarui`;
+                
+                // Isi form
+                const mapFields = {
+                    'agendaId': a.id_kegiatan,
+                    'agendaNama': a.nama_kegiatan || '',
+                    'agendaTanggal': a.tanggal || '',
+                    'agendaDeskripsi': a.deskripsi || ''
+                };
+                
+                Object.entries(mapFields).forEach(([id, value]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = value;
+                });
+                
+                // Update label & tombol
+                const label = document.getElementById('agendaModalLabel');
+                if (label) label.textContent = 'Edit Agenda';
+                
+                if (btnSimpan) {
+                    btnSimpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Perbarui`;
+                }
+                
                 // Tutup modal detail jika terbuka
-                bootstrap.Modal.getInstance(document.getElementById('modalDetail'))?.hide();
-                setTimeout(() => modalAgenda.show(), 300);
+                modalDetail?.hide();
+                
+                // Buka modal edit
+                setTimeout(() => modalAgenda?.show(), 200);
             } else {
-                showToast('Gagal memuat data agenda', 'error');
+                showToast('❌ ' + (data.message || 'Gagal memuat data agenda'), 'error');
             }
         } catch (err) {
+            console.error('✏️ Edit error:', err);
             showToast('Error: ' + err.message, 'error');
+        } finally {
+            if (btnSimpan) {
+                btnSimpan.disabled = false;
+                btnSimpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Simpan`;
+            }
         }
     };
 
     // ===== HAPUS AGENDA =====
     window.hapusAgenda = function (id) {
-        if (!id) { showToast('ID Agenda tidak valid', 'error'); return; }
+        console.log('🗑️ Hapus agenda ID:', id);
+        
+        if (!id || isNaN(parseInt(id))) { 
+            showToast('ID Agenda tidak valid', 'error'); 
+            return; 
+        }
+        
+        if (!cfg.destroyUrl) {
+            showToast('Konfigurasi URL hapus tidak ditemukan', 'error');
+            return;
+        }
+        
         currentHapusId = id;
-        modalHapus.show();
+        
+        // Update nama agenda di modal konfirmasi (opsional)
+        const namaEl = document.getElementById('hapusNamaAgenda');
+        if (namaEl) {
+            // Cari nama dari data yang ada di halaman (jika tersedia)
+            const item = document.querySelector(`[data-id="${id}"]`);
+            if (item) {
+                const nama = item.querySelector('.agenda-nama')?.textContent || 'agenda ini';
+                namaEl.textContent = nama;
+            }
+        }
+        
+        modalHapus?.show();
     };
 
+    // ===== KONFIRMASI HAPUS =====
     document.getElementById('btnKonfirmasiHapus')?.addEventListener('click', async () => {
         if (!currentHapusId) return;
+        
+        const btn = document.getElementById('btnKonfirmasiHapus');
+        const originalContent = btn.innerHTML;
+        
         try {
-            const res  = await fetch(cfg.destroyUrl, {
-                method: 'DELETE', headers,
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menghapus...';
+            
+            const res = await fetch(cfg.destroyUrl, {
+                method: 'DELETE', 
+                headers,
                 body: JSON.stringify({ id: currentHapusId }),
             });
+            
+            if (res.status === 419) {
+                showToast('Sesi expired, silakan refresh halaman', 'error');
+                return;
+            }
+            
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            
             const data = await res.json();
-            modalHapus.hide();
+            
             if (data.status === 'success') {
-                showSukses('Berhasil menghapus data!', data.message || 'Data agenda berhasil dihapus.');
+                modalHapus?.hide();
+                showSukses('Berhasil!', data.message || 'Data agenda berhasil dihapus.');
             } else {
-                showToast('❌ ' + (data.message || 'Gagal menghapus'), 'error');
+                showToast('❌ ' + (data.message || 'Gagal menghapus agenda'), 'error');
             }
         } catch (err) {
+            console.error('🗑️ Hapus error:', err);
             showToast('Error: ' + err.message, 'error');
         } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
             currentHapusId = null;
         }
     });
 
-    document.getElementById('modalHapus')?.addEventListener('hidden.bs.modal', () => {
+    // Reset currentHapusId saat modal hapus ditutup
+    modalHapusEl?.addEventListener('hidden.bs.modal', () => {
         currentHapusId = null;
     });
 
-    // ===== SUBMIT FORM =====
+    // ===== SUBMIT FORM AGENDA (Tambah/Edit) =====
     document.getElementById('formAgenda')?.addEventListener('submit', async function (e) {
         e.preventDefault();
 
-        const nama    = document.getElementById('agendaNama').value.trim();
-        const tanggal = document.getElementById('agendaTanggal').value;
+        // Validasi input
+        const namaEl = document.getElementById('agendaNama');
+        const tanggalEl = document.getElementById('agendaTanggal');
+        const nama = namaEl?.value.trim() || '';
+        const tanggal = tanggalEl?.value || '';
+        
         let valid = true;
 
         if (!nama) {
-            document.getElementById('namaError').textContent = 'Nama kegiatan wajib diisi!';
-            document.getElementById('namaError').classList.add('show');
-            document.getElementById('agendaNama').classList.add('is-invalid');
+            const errEl = document.getElementById('namaError');
+            if (errEl) {
+                errEl.textContent = 'Nama kegiatan wajib diisi!';
+                errEl.classList.add('show');
+            }
+            if (namaEl) namaEl.classList.add('is-invalid');
             valid = false;
         } else {
-            document.getElementById('namaError').classList.remove('show');
-            document.getElementById('agendaNama').classList.remove('is-invalid');
+            const errEl = document.getElementById('namaError');
+            if (errEl) errEl.classList.remove('show');
+            if (namaEl) namaEl.classList.remove('is-invalid');
         }
 
         if (!tanggal) {
-            document.getElementById('tanggalError').textContent = 'Tanggal wajib diisi!';
-            document.getElementById('tanggalError').classList.add('show');
-            document.getElementById('agendaTanggal').classList.add('is-invalid');
+            const errEl = document.getElementById('tanggalError');
+            if (errEl) {
+                errEl.textContent = 'Tanggal wajib diisi!';
+                errEl.classList.add('show');
+            }
+            if (tanggalEl) tanggalEl.classList.add('is-invalid');
             valid = false;
         } else {
-            document.getElementById('tanggalError').classList.remove('show');
-            document.getElementById('agendaTanggal').classList.remove('is-invalid');
+            const errEl = document.getElementById('tanggalError');
+            if (errEl) errEl.classList.remove('show');
+            if (tanggalEl) tanggalEl.classList.remove('is-invalid');
         }
 
         if (!valid) return;
 
-        const id      = document.getElementById('agendaId').value;
-        const btn     = document.getElementById('btnSimpanAgenda');
-        btn.disabled  = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" style="width:14px;height:14px;border-width:2px;"></span>Menyimpan...';
-
+        // Siapkan data
+        const idEl = document.getElementById('agendaId');
+        const id = idEl?.value || '';
+        const deskripsiEl = document.getElementById('agendaDeskripsi');
+        
         const payload = {
-            id:             id || undefined,
-            nama_kegiatan:  nama,
-            tanggal:        tanggal,
-            deskripsi:      document.getElementById('agendaDeskripsi').value.trim(),
+            nama_kegiatan: nama,
+            tanggal: tanggal,
+            deskripsi: deskripsiEl?.value.trim() || ''
         };
-        if (!payload.id) delete payload.id;
+        if (id) payload.id = id;
+
+        // UI Loading
+        const btn = document.getElementById('btnSimpanAgenda');
+        const originalBtnContent = btn?.innerHTML || '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menyimpan...';
+        }
 
         try {
-            const url    = id ? cfg.updateUrl : cfg.storeUrl;
-            const method = id ? 'PUT' : 'POST';
-            const res    = await fetch(url, { method, headers, body: JSON.stringify(payload) });
-            const data   = await res.json();
-
+            const isEdit = !!id;
+            const url = isEdit ? cfg.updateUrl : cfg.storeUrl;
+            const method = isEdit ? 'PUT' : 'POST';
+            
+            if (!url) {
+                throw new Error(`URL ${isEdit ? 'update' : 'store'} tidak ditemukan di config`);
+            }
+            
+            const res = await fetch(url, { 
+                method, 
+                headers, 
+                body: JSON.stringify(payload) 
+            });
+            
+            if (res.status === 419) {
+                showToast('Sesi expired, silakan refresh halaman', 'error');
+                return;
+            }
+            
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.message || `HTTP ${res.status}`);
+            }
+            
+            const data = await res.json();
+            
             if (data.status === 'success') {
-                modalAgenda.hide();
-                const actionType = id ? 'mengedit' : 'menambah';
-                const title = id ? 'Berhasil mengedit data!' : 'Berhasil menambah data!';
-                showSukses(title, data.message || 'Data agenda berhasil disimpan.');
+                modalAgenda?.hide();
+                const actionText = isEdit ? 'mengedit' : 'menambah';
+                showSukses(
+                    `Berhasil ${actionText} data!`, 
+                    data.message || `Agenda berhasil ${isEdit ? 'diperbarui' : 'ditambahkan'}.`
+                );
             } else {
-                showToast('❌ ' + (data.message || 'Gagal menyimpan'), 'error');
+                showToast('❌ ' + (data.message || 'Gagal menyimpan agenda'), 'error');
             }
         } catch (err) {
+            console.error('💾 Submit error:', err);
             showToast('Error: ' + err.message, 'error');
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Simpan`;
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnContent;
+            }
         }
     });
 
-    // ===== FORMAT TANGGAL =====
+    // ===== FORMAT TANGGAL INDONESIA =====
     function formatTanggal(tanggal) {
         if (!tanggal) return '—';
-        const bulan = ['Januari','Februari','Maret','April','Mei','Juni',
-                       'Juli','Agustus','September','Oktober','November','Desember'];
-        const d = new Date(tanggal);
+        const bulan = [
+            'Januari','Februari','Maret','April','Mei','Juni',
+            'Juli','Agustus','September','Oktober','November','Desember'
+        ];
+        const d = new Date(tanggal + 'T00:00:00'); // Fix timezone issue
         if (isNaN(d.getTime())) return tanggal;
         return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
     }
+
+    // ===== LOGGING DEBUG (bisa dihapus di production) =====
+    console.log('✅ Kalender JS loaded', {
+        csrf: cfg.csrf ? '✓' : '✗',
+        urls: {
+            show: !!cfg.showUrl,
+            store: !!cfg.storeUrl,
+            update: !!cfg.updateUrl,
+            destroy: !!cfg.destroyUrl
+        }
+    });
 });

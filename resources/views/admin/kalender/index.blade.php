@@ -88,16 +88,20 @@
                                     $isSelected = $day === $selectedDay;
                                     $hasAgenda  = isset($agendaByDate[$dateStr]);
                                     $isMinggu   = ($dayOfWeek + $day - 1) % 7 === 0;
+                                    $isLibur    = isset($hariLiburBulanIni[$dateStr]);
 
                                     $cls = 'tanggal-item';
                                     if ($isMinggu)   $cls .= ' minggu';
+                                    if ($isLibur)    $cls .= ' hari-libur';
                                     if ($isToday)    $cls .= ' today';
                                     if ($isSelected) $cls .= ' selected-day';
                                     if ($hasAgenda)  $cls .= ' has-agenda';
                                 @endphp
                                 <a href="{{ route('admin.kalender.index', ['month' => $month, 'year' => $year, 'day' => $day]) }}"
-                                   class="{{ $cls }}" data-date="{{ $dateStr }}">
+                                   class="{{ $cls }}" data-date="{{ $dateStr }}"
+                                   @if($isLibur) title="{{ $hariLiburBulanIni[$dateStr] }}" @endif>
                                     <span>{{ $day }}</span>
+                                    @if($isLibur)<span class="libur-dot"></span>@endif
                                 </a>
                             @endfor
 
@@ -122,6 +126,14 @@
                         </p>
 
                         <div id="daftarAgendaContent">
+                            @if($selectedHariLibur)
+                                <div class="hari-libur-banner">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                    <span>Hari Libur Nasional: <strong>{{ $selectedHariLibur }}</strong></span>
+                                </div>
+                            @endif
                             @if(empty($selectedAgenda))
                                 <div class="agenda-empty">
                                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
@@ -151,7 +163,7 @@
                                         </div>
                                         <div class="kegiatan-actions" onclick="event.stopPropagation()">
                                             <button class="btn-kegiatan btn-edit-kegiatan"
-                                                    onclick="editAgenda({{ $kegiatan['id'] ?? 0 }})">
+                                                    onclick="editAgenda({{ $kegiatan['id_kegiatan'] ?? 0 }})">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                                                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -159,7 +171,7 @@
                                                 <span class="d-none d-md-inline">Edit</span>
                                             </button>
                                             <button class="btn-kegiatan btn-hapus-kegiatan"
-                                                    onclick="hapusAgenda({{ $kegiatan['id'] ?? 0 }})">
+                                                    onclick="hapusAgenda({{ $kegiatan['id_kegiatan'] ?? 0 }})">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                                                     <polyline points="3 6 5 6 21 6"/>
                                                     <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -356,21 +368,48 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/admin/sidebar.js') }}"></script>
 <script>
-window.kalenderConfig = {
-    storeUrl:   "{{ route('admin.kalender.store') }}",
-    updateUrl:  "{{ route('admin.kalender.update') }}",
-    destroyUrl: "{{ route('admin.kalender.destroy') }}",
-    showUrl:    "{{ route('admin.kalender.show') }}",
-    csrf:       "{{ csrf_token() }}",
-    selectedDate: "{{ $selectedDateFull }}",
-};
+    // ===== 1. KONFIGURASI WAJIB =====
+    window.kalenderConfig = {
+        storeUrl:   "{{ route('admin.kalender.store') }}",
+        updateUrl:  "{{ route('admin.kalender.update', ['id' => '__ID__']) }}", // Dinamis untuk JS
+        destroyUrl: "{{ route('admin.kalender.destroy') }}",
+        showUrl:    "{{ route('admin.kalender.show') }}",
+        csrf:       "{{ csrf_token() }}",
+        selectedDate: "{{ $selectedDateFull ?? date('Y-m-d') }}",
+    };
 
-// Auto-buka modal tambah agenda jika dari akses cepat dashboard
-if (new URLSearchParams(window.location.search).get('openModal') === 'true') {
-    document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('btnTambahAgenda')?.click();
-    });
-}
+    // ===== 2. FUNGSI AUTO-OPEN MODAL (ROBUST) =====
+    function checkAutoOpenModal() {
+        const params = new URLSearchParams(window.location.search);
+        
+        // Cek jika parameter openModal=true ada
+        if (params.get('openModal') === 'true') {
+            // Bersihkan URL agar tidak reopen saat refresh (opsional tapi disarankan)
+            params.delete('openModal');
+            const newUrl = window.location.pathname + 
+                          (params.toString() ? '?' + params.toString() : '') + 
+                          window.location.hash;
+            window.history.replaceState({}, document.title, newUrl);
+
+            // Coba buka modal
+            const btn = document.getElementById('btnTambahAgenda');
+            if (btn) {
+                console.log('🚀 Auto-opening modal tambah agenda...');
+                btn.click();
+            } else {
+                console.warn('⚠️ Tombol btnTambahAgenda tidak ditemukan, mungkin script dimuat terlalu cepat.');
+            }
+        }
+    }
+
+    // ===== 3. EKSEKUSI: Cek status DOM saat ini =====
+    if (document.readyState === 'loading') {
+        // DOM belum siap → tunggu event
+        document.addEventListener('DOMContentLoaded', checkAutoOpenModal);
+    } else {
+        // DOM sudah siap → jalankan langsung
+        checkAutoOpenModal();
+    }
 </script>
 <script src="{{ asset('js/admin/kalender.js') }}"></script>
 @endsection

@@ -26,13 +26,27 @@ class GuruController extends Controller
         $validated = $request->validate([
             'nama_guru' => 'required|string|min:3|max:100',
             'nip'       => 'required|digits_between:8,18',
-            'alamat'    => 'required|string|min:10|max:255',
+            'alamat'    => 'required|string|min:3|max:255',
             'no_telp'   => 'required|digits_between:10,15',
             'email'     => 'required|email|max:100|unique:guru,email',
             'kelas'     => 'required|string|max:10',
         ]);
 
-        DB::table('guru')->insert($validated);
+        $idGuru = DB::table('guru')->insertGetId($validated);
+
+        // Generate akun otomatis:
+        // username = email
+        // password = kata pertama nama guru (lowercase) + 3 digit terakhir no_telp
+        $namaAwal = strtolower(explode(' ', trim($validated['nama_guru']))[0]);
+        $telpAkhir = substr($validated['no_telp'], -3);
+        $password  = $namaAwal . $telpAkhir;
+
+        DB::table('akun')->insert([
+            'id_guru'  => $idGuru,
+            'username' => $validated['email'],
+            'password' => $password,
+            'role'     => 'guru',
+        ]);
 
         return response()->json(['success' => true, 'message' => 'Data guru berhasil ditambahkan']);
     }
@@ -44,7 +58,7 @@ class GuruController extends Controller
             'id_guru'   => 'required|integer|exists:guru,id_guru',
             'nama_guru' => 'required|string|min:3|max:100',
             'nip'       => 'required|digits_between:8,18',
-            'alamat'    => 'required|string|min:10|max:255',
+            'alamat'    => 'required|string|min:3|max:255',
             'no_telp'   => 'required|digits_between:10,15',
             'email'     => 'required|email|max:100|unique:guru,email,' . $request->id_guru . ',id_guru',
             'kelas'     => 'required|string|max:10',

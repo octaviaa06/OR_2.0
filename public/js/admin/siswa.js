@@ -252,10 +252,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const data = await res.json();
             if (data.success) {
                 const d = data.data;
-                document.getElementById('akunNama').textContent     = d.nama     || '—';
-                document.getElementById('akunUsername').textContent = d.username || '—';
-                document.getElementById('akunPassword').textContent = d.password || '—';
-                document.getElementById('akunRole').textContent     = d.role     || '—';
+                document.getElementById('akunNama').textContent     = d.nama_siswa || d.nama || '—';
+                document.getElementById('akunUsername').textContent = d.username   || '—';
+                document.getElementById('akunPassword').textContent = d.password   || '—';
+                document.getElementById('akunRole').textContent     = d.role       || '—';
                 modalAkun.show();
             } else {
                 showToast(data.message || 'Gagal memuat akun', 'error');

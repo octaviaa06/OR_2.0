@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('email','emailError','Format email tidak valid'); ok = false; } else clearError('email','emailError');
         if (!telp || !/^\d{10,15}$/.test(telp)) { setError('no_telp','telpError','Nomor telepon 10–15 digit'); ok = false; } else clearError('no_telp','telpError');
         if (!kelas)                              { setError('kelas','kelasError','Pilih kelas terlebih dahulu'); ok = false; } else clearError('kelas','kelasError');
-        if (!alamat || alamat.length < 10)       { setError('alamat','alamatError','Alamat minimal 10 karakter'); ok = false; } else clearError('alamat','alamatError');
+        if (!alamat || alamat.length < 3)       { setError('alamat','alamatError','Alamat minimal 3 karakter'); ok = false; } else clearError('alamat','alamatError');
 
         return ok;
     }
@@ -192,10 +192,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const data = await res.json();
             if (data.success) {
                 const d = data.data;
-                document.getElementById('akunNama').textContent     = d.nama     || '—';
-                document.getElementById('akunUsername').textContent = d.username || '—';
-                document.getElementById('akunPassword').textContent = d.password || '—';
-                document.getElementById('akunRole').textContent     = d.role     || '—';
+                document.getElementById('akunNama').textContent     = d.nama_guru || d.nama || '—';
+                document.getElementById('akunUsername').textContent = d.username  || '—';
+                document.getElementById('akunPassword').textContent = d.password  || '—';
+                document.getElementById('akunRole').textContent     = d.role      || '—';
                 modalAkun.show();
             } else {
                 showToast(data.message || 'Gagal memuat akun', 'error');
