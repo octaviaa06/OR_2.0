@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ===== AJAX UPDATE STATUS =====
     function updateIzinStatus(idIzin, status, alasan) {
-        const item = document.querySelector(`.izin-item[data-id="${idIzin}"]`);
+        const item = document.querySelector(`.izin-row="${idIzin}"]`);
         if (!item) { showToast('Error: Item tidak ditemukan', false); return; }
 
         const buttons = item.querySelectorAll('button');
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     item.remove();
                     updateBadgeCount();
                     const container = document.getElementById('izinContainer');
-                    if (container && !container.querySelector('.izin-item')) {
+                    if (container && !container.querySelector('.izin-row')) {
                         container.innerHTML = '<p class="text-muted small mb-0">Tidak ada izin menunggu</p>';
                     }
                 }, 300);
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updateBadgeCount() {
-        const count = document.querySelectorAll('.izin-item').length;
+        const currentCount = document.querySelectorAll('.izin-row').length;
         const badge = document.getElementById('izinCounter');
         if (badge) badge.textContent = count;
     }
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const res  = await fetch(config.refreshUrl + '?t=' + Date.now());
             const data = await res.json();
             if (data.success) {
-                const currentCount = document.querySelectorAll('.izin-item').length;
+                const item = document.querySelector(`.izin-row[data-id="${idIzin}"]`);
                 if (data.count > currentCount) {
                     showToast('📬 Ada izin baru!', true);
                 }

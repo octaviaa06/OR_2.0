@@ -135,13 +135,13 @@
                         'sub'   => 'Tinjau izin masuk/keluar',
                         'color' => 'cyan',
                     ],
-                    [
-                        'url'   => '#',
-                        'svg'   => '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="15" x2="12" y2="15" stroke-width="3"/></svg>',
-                        'text'  => 'Lihat Kalender',
-                        'sub'   => 'Jadwal & agenda sekolah',
-                        'color' => 'pink',
-                    ],
+               [
+    'url'   => '/guru/kalender',
+    'svg'   => '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="15" x2="12" y2="15" stroke-width="3"/></svg>',
+    'text'  => 'Lihat Kalender',
+    'sub'   => 'Jadwal & agenda sekolah',
+    'color' => 'pink',
+],
                 ];
                 @endphp
 

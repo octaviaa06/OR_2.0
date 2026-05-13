@@ -12,6 +12,7 @@ use App\Http\Controllers\Guru\GuruDashboardController;
 use App\Http\Controllers\Guru\SiswaController as GuruSiswaController;
 use App\Http\Controllers\Guru\AbsensiController as GuruAbsensiController;
 use App\Http\Controllers\Guru\PerizinanController as GuruPerizinanController;
+use App\Http\Controllers\Guru\KalenderController as GuruKalenderController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\AttendanceReportController;
 
@@ -88,4 +89,21 @@ Route::middleware(['auth.check', 'role:guru'])->prefix('guru')->name('guru.')->g
     // Perizinan
     Route::get('/izin',                [GuruPerizinanController::class, 'index'])->name('izin.index');
     Route::put('/izin/update-status',  [GuruPerizinanController::class, 'updateStatus'])->name('izin.update.status');
+        // Kalender
+// Kalender
+// Kalender
+Route::get('/kalender', [GuruKalenderController::class, 'index'])
+    ->name('kalender.index');
+
+Route::post('/kalender/store', [GuruKalenderController::class, 'store'])
+    ->name('kalender.store');
+
+Route::put('/kalender/update/{id}', [GuruKalenderController::class, 'update'])
+    ->name('kalender.update');
+
+Route::delete('/kalender/destroy', [GuruKalenderController::class, 'destroy'])
+    ->name('kalender.destroy');
+
+Route::get('/kalender/show', [GuruKalenderController::class, 'show'])
+    ->name('kalender.show');
 });
