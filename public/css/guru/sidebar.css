@@ -349,8 +349,17 @@
    ✨ ACTIVE STATE + GLOW INDICATOR
    ======================================== */
 .nav-link.active {
+
     color: #F1F5F9;
     background: rgba(139, 92, 246, 0.1);
+
+    color: #F8FAFC;
+    background: linear-gradient(90deg, 
+        rgba(139, 92, 246, 0.2), 
+        rgba(99, 102, 241, 0.08),
+        transparent 70%
+    );
+
     font-weight: 600;
 }
 

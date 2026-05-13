@@ -35,7 +35,7 @@ class AbsensiController extends Controller
             : $allKelas;
 
         $kelasDefault  = $kelasList[0] ?? '';
-        $selectedClass = $request->query('kelas', '');
+        $selectedClass = $request->query('kelas', $kelasDefault);
         $selectedDate  = $request->query('tanggal', $today);
 
         // Validasi tanggal
@@ -137,20 +137,39 @@ class AbsensiController extends Controller
             if (!isset($statistics[$id])) {
                 $statistics[$id] = [
                     'nama'  => $row->nama_siswa,
-                    'Hadir' => 0, 'Izin' => 0, 'Sakit' => 0, 'Alpa' => 0,
+                    'Hadir' => 0,
+                    'Izin'  => 0,
+                    'Sakit' => 0,
+                    'Alpa'  => 0,
+                    'persentase_kehadiran' => 0,
                 ];
             }
             if (isset($statistics[$id][$row->status])) {
                 $statistics[$id][$row->status]++;
             }
         }
-
+        
+        // Hitung hari efektif dan persentase kehadiran untuk filter bulan
+        $hariEfektif = null;
+        if ($request->filter_type === 'bulan') {
+            $hariEfektif = $this->hitungHariEfektif($startDate, $endDate);
+            foreach ($statistics as $id => &$stat) {
+                $jumlahHadir = $stat['Hadir'];
+                $stat['persentase_kehadiran'] = $hariEfektif > 0
+                    ? round(($jumlahHadir / $hariEfektif) * 100, 2)
+                    : 0;
+            }
+            unset($stat);
+        }
+        
         return response()->json([
-            'status'     => 'success',
-            'kelas'      => $request->kelas,
-            'start_date' => $startDate,
-            'end_date'   => $endDate,
-            'data'       => array_values($statistics),
+            'status'       => 'success',
+            'kelas'        => $request->kelas,
+            'start_date'   => $startDate,
+            'end_date'     => $endDate,
+            'filter_type'  => $request->filter_type,
+            'hari_efektif' => $hariEfektif,
+            'data'         => array_values($statistics),
         ]);
     }
 
@@ -167,5 +186,19 @@ class AbsensiController extends Controller
             return [$d->format('Y-m-01'), $d->format('Y-m-t')];
         }
         return [$date, $date];
+    }
+
+        private function hitungHariEfektif($startDate, $endDate) {
+        $hariEfektif = 0;
+        $start = new \DateTime($startDate);
+        $end   = new \DateTime($endDate);
+        while ($start <= $end) {
+            // Skip hari Minggu
+            if ($start->format('N') != 7) {
+                $hariEfektif++;
+            }
+            $start->modify('+1 day');
+        }
+        return $hariEfektif;
     }
 }

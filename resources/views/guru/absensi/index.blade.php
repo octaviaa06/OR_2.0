@@ -3,8 +3,8 @@
 @section('title', 'Absensi Siswa | OrtuConnect')
 
 @section('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/sidebar.css') }}">
-<link rel="stylesheet" href="{{ asset('css/admin/absensi.css') }}">
+<link rel="stylesheet" href="{{ asset('css/guru/sidebar.css') }}">
+<link rel="stylesheet" href="{{ asset('css/guru/absensi.css') }}">
 @endsection
 
 @section('content')
@@ -65,38 +65,29 @@
                         </div>
 
                         {{-- Kelas --}}
-                        <div class="filter-group">
-                            <label class="filter-label">Kelas</label>
-                            @if(empty($kelasList))
-                                <div class="alert-inline">Tidak ada kelas tersedia</div>
-                            @else
-                                <select name="kelas" class="filter-input filter-select" onchange="this.form.submit()">
-                                    <option value="" {{ $selectedClass === '' ? 'selected' : '' }}>
-                                        — Semua Kelas (Belum Absen) —
-                                    </option>
-                                    @foreach($kelasList as $k)
-                                        <option value="{{ $k }}" {{ $selectedClass === $k ? 'selected' : '' }}>
-                                            {{ $k }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            @endif
-                        </div>
 
                         {{-- Tombol Aksi --}}
                         <div class="d-flex gap-2 filter-actions">
-                            <button type="button" class="btn-action-primary" id="btnSimpan"
+                            <button type="button"
+                                    class="btn-action-primary"
+                                    id="btnSimpan"
                                     onclick="simpanAbsensi()"
-                                    {{ ($isDefaultView || empty($selectedClass)) ? 'disabled' : '' }}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    {{ empty($absensiList) ? 'disabled' : '' }}>
+
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                                     <polyline points="17 21 17 13 7 13 7 21"/>
                                     <polyline points="7 3 7 8 15 8"/>
                                 </svg>
                                 Simpan
                             </button>
-                            <button type="button" class="btn-action-secondary"
-                                    onclick="bukaModalExport()" {{ empty($kelasList) ? 'disabled' : '' }}>
+
+                            <button type="button"
+                                    class="btn-action-secondary"
+                                    onclick="bukaModalExport()" 
+                                    {{ empty($absensiList) ? 'disabled' : '' }}>
+
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                     <polyline points="14 2 14 8 20 8"/>
@@ -125,13 +116,14 @@
                         <line x1="12" y1="8" x2="12" y2="12"/>
                         <line x1="12" y1="16" x2="12.01" y2="16"/>
                     </svg>
-                    @if($isDefaultView)
-                        <span>Menampilkan <strong>semua siswa belum diabsen</strong> pada
-                              <strong>{{ \Carbon\Carbon::parse($selectedDate)->translatedFormat('d F Y') }}</strong></span>
-                    @else
-                        <span><strong>Kelas:</strong> {{ $selectedClass }} &nbsp;|&nbsp;
-                              <strong>Tanggal:</strong> {{ \Carbon\Carbon::parse($selectedDate)->format('d/m/Y') }}</span>
-                    @endif
+                    
+                    <span>
+                        <strong>Kelas:</strong> {{ $selectedClass }}
+                        &nbsp;|&nbsp;
+                        <strong>Tanggal:</strong>
+                        {{ \Carbon\Carbon::parse($selectedDate)->format('d/m/Y') }}
+                    </span>
+
                 </div>
                 <span class="info-range">
                     Rentang: {{ \Carbon\Carbon::parse($minDate)->format('d/m/Y') }} — {{ \Carbon\Carbon::parse($maxDate)->format('d/m/Y') }}
@@ -169,11 +161,9 @@
                                 <line x1="3" y1="12" x2="3.01" y2="12"/>
                                 <line x1="3" y1="18" x2="3.01" y2="18"/>
                             </svg>
-                            @if($isDefaultView)
-                                Siswa Belum Diabsen — Semua Kelas
-                            @else
-                                Daftar Absensi — {{ $selectedClass }}
-                            @endif
+
+                            Daftar Absensi — {{ $selectedClass }}
+
                         </h5>
                         <span class="total-badge">
                             @if($isDefaultView)
@@ -194,12 +184,9 @@
                                 <thead>
                                     <tr>
                                         <th style="width:5%">No</th>
-                                        @if($isDefaultView)
-                                            <th style="width:18%">Kelas</th>
-                                            <th style="width:37%">Nama Siswa</th>
-                                        @else
-                                            <th style="width:40%">Nama Siswa</th>
-                                        @endif
+
+                                        <th style="width:40%">Nama Siswa</th>
+
                                         <th style="width:20%">Status Saat Ini</th>
                                         <th style="width:20%" class="text-center">Status Baru</th>
                                     </tr>
@@ -226,14 +213,10 @@
                                         @endphp
                                         <tr>
                                             <td>{{ $no++ }}</td>
-                                            @if($isDefaultView)
-                                                <td>
-                                                    <span class="kelas-badge" style="font-size:11px;padding:3px 9px;">
-                                                        {{ $a['kelas_nama'] ?? '' }}
-                                                    </span>
-                                                </td>
-                                            @endif
-                                            <td class="fw-semibold">{{ htmlspecialchars($a['nama_siswa'] ?? 'N/A') }}</td>
+                                            
+                                            
+
+                                            <td class="fw-semibold">{{ $a['nama_siswa'] ?? 'N/A' }}</td>
                                             <td>
                                                 @if($a['is_recorded'])
                                                     <span class="status-badge {{ $badgeMap[$a['status_absensi']] ?? 'badge-secondary' }}">
@@ -245,8 +228,8 @@
                                             </td>
                                             <td class="text-center">
                                                 <input type="hidden"
-                                                       name="absensi[{{ $a['id_siswa'] }}][id_siswa]"
-                                                       value="{{ $a['id_siswa'] }}">
+                                                    name="absensi[{{ $a['id_siswa'] }}][id_siswa]"
+                                                    value="{{ $a['id_siswa'] }}">
                                                 @if($a['is_recorded'])
                                                     <span class="locked-text">
                                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -305,21 +288,14 @@
                                 <line x1="12" y1="9" x2="12" y2="13"/>
                                 <line x1="12" y1="17" x2="12.01" y2="17"/>
                             </svg>
-                             <strong>{{ $stats['belum'] }} </strong> 
+                            <strong>{{ $stats['belum'] }} </strong> 
                         </div>
                         @endif
 
                         {{-- Tombol simpan massal (default view) --}}
-                        @if($isDefaultView)
-                        <div class="warning-bar mt-3" style="background:rgba(139,92,246,0.08);border-color:rgba(139,92,246,0.2);color:#c4b5fd;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="12" y1="8" x2="12" y2="12"/>
-                                <line x1="12" y1="16" x2="12.01" y2="16"/>
-                            </svg>
-                            Untuk menyimpan absensi, pilih kelas spesifik terlebih dahulu.
-                        </div>
-                        @endif
+                        
+
+                        
                     </form>
                 @endif
             </div>
@@ -350,18 +326,11 @@
                 </button>
             </div>
             <div class="modal-body glass-modal-body">
+                
+           
+
                 <div class="row g-3">
-                    <div class="col-12">
-                        <div class="form-field">
-                            <label class="field-label">Kelas <span class="required">*</span></label>
-                            <select id="exportKelas" class="field-input field-select">
-                                <option value="">— Pilih Kelas —</option>
-                                @foreach($kelasList as $k)
-                                    <option value="{{ $k }}" {{ $selectedClass === $k ? 'selected' : '' }}>{{ $k }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+                    
                     <div class="col-12">
                         <div class="form-field">
                             <label class="field-label">Filter Periode</label>
@@ -404,11 +373,14 @@
 </div>
 
 <form id="logoutForm" action="{{ route('logout') }}" method="POST" class="d-none">@csrf</form>
+
+<input type="hidden" id="exportKelas" value="{{ $selectedClass }}">
+
 @endsection
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ asset('js/admin/sidebar.js') }}"></script>
+<script src="{{ asset('js/guru/sidebar.js') }}"></script>
 <script>
     window.absensiConfig = {
     simpanUrl: "{{ route('guru.absensi.simpan') }}",
@@ -418,5 +390,5 @@
     isDefaultView: @json($isDefaultView),
 };
 </script>
-<script src="{{ asset('js/admin/absensi.js') }}"></script>
+<script src="{{ asset('js/guru/absensi.js') }}"></script>
 @endsection

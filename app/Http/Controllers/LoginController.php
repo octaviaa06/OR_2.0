@@ -11,7 +11,8 @@ class LoginController extends Controller
 {
     public function showLoginForm()
     {
-        if (Session::has('role')) {
+        // Jika sudah login dan tidak ada error, redirect ke dashboard
+        if (Session::has('role') && !session('error')) {
             return redirect(Session::get('role') === 'admin'
                 ? route('admin.dashboard')
                 : route('guru.dashboard'));
@@ -35,6 +36,8 @@ class LoginController extends Controller
         $akun = DB::table('akun')->where('username', $username)->first();
 
         if (!$akun) {
+            // Hapus session lama jika ada sebelum kembali ke login
+            Session::flush();
             return back()->with('error', 'Username atau password salah')->withInput();
         }
 
@@ -50,10 +53,12 @@ class LoginController extends Controller
         }
 
         if (!$valid) {
+            Session::flush();
             return back()->with('error', 'Username atau password salah')->withInput();
         }
 
         if (!in_array($akun->role, ['admin', 'guru'])) {
+            Session::flush();
             return back()->with('error', 'Akses ditolak. Gunakan aplikasi mobile untuk login sebagai orang tua.')->withInput();
         }
 

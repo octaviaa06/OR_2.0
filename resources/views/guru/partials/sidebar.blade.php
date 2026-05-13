@@ -6,6 +6,7 @@
         <div class="brand-area">
             <div class="logo-wrapper">
                 <span class="logo-text">Ortu<span class="logo-highlight">Connect</span></span>
+                {{-- Decorative sparkles --}}
                 <svg class="logo-sparkle sparkle-1" width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 0L14 10L24 12L14 14L12 24L10 14L0 12L10 10Z"/>
                 </svg>
@@ -14,6 +15,7 @@
                 </svg>
             </div>
         </div>
+        {{-- Toggle Button Desktop --}}
         <button class="slide-btn" id="toggleSidebarBtn" aria-label="Collapse Sidebar">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15 18 9 12 15 6"/>
@@ -95,6 +97,7 @@
                         <polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="2"/>
                         <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <polyline points="10 9 9 9 8 9" stroke="#6366F1" stroke-width="2" stroke-linecap="round"/>
                         <defs>
                             <linearGradient id="g-izin-primary" x1="6" y1="2" x2="20" y2="20">
                                 <stop offset="0%" stop-color="#8B5CF6"/>
@@ -135,6 +138,7 @@
     {{-- ===== FILLER ILLUSTRATION ===== --}}
     <div class="sidebar-filler">
         <svg class="filler-illustration" viewBox="0 0 200 120" fill="none" aria-hidden="true">
+            {{-- Rocket --}}
             <g transform="translate(60, 20) rotate(-15)">
                 <path d="M30 0C30 0 45 20 45 50L35 60L25 60L15 50C15 20 30 0 30 0Z" fill="url(#g-rocket-body)" opacity="0.6"/>
                 <circle cx="30" cy="30" r="5" fill="white" opacity="0.4"/>
@@ -142,12 +146,14 @@
                 <path d="M45 50L50 70L35 60Z" fill="#F472B6" opacity="0.5"/>
                 <ellipse cx="30" cy="75" rx="8" ry="12" fill="#FBBF24" opacity="0.6"/>
             </g>
+            {{-- Books stack --}}
             <g transform="translate(20, 70)">
                 <rect x="0" y="10" width="30" height="25" rx="2" fill="#8B5CF6" opacity="0.3"/>
                 <rect x="5" y="5" width="30" height="25" rx="2" fill="#6366F1" opacity="0.35"/>
                 <rect x="10" y="0" width="30" height="25" rx="2" fill="#A78BFA" opacity="0.4"/>
                 <line x1="18" y1="5" x2="18" y2="25" stroke="white" stroke-width="1" opacity="0.3"/>
             </g>
+            {{-- Decorative stars --}}
             <circle cx="150" cy="30" r="3" fill="#8B5CF6" opacity="0.4"/>
             <circle cx="170" cy="50" r="2" fill="#6366F1" opacity="0.3"/>
             <circle cx="140" cy="80" r="4" fill="#A78BFA" opacity="0.35"/>
@@ -182,7 +188,7 @@
 {{-- ===== OVERLAY (Mobile) ===== --}}
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-{{-- ===== HAMBURGER BUTTON (Mobile) ===== --}}
+{{-- ===== HAMBURGER BUTTON (Mobile/Tablet) ===== --}}
 <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle Sidebar">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
         <line x1="3" y1="6"  x2="21" y2="6"  class="ham-line ham-line-1"/>
