@@ -269,7 +269,7 @@
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ asset('js/admin/sidebar.js') }}"></script>
+<script src="{{ asset('js/guru/sidebar.js') }}"></script>
 <script>
 window.perizinanConfig = {
     updateUrl: "{{ route('guru.perizinan.update') }}",

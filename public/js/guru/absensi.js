@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ===== SIMPAN ABSENSI =====
     window.simpanAbsensi = async function () {
-        const kelasEl   = document.querySelector('select[name="kelas"]');
+        const kelasEl = document.querySelector('input[name="kelas"]');
         const tanggalEl = document.querySelector('input[name="tanggal"]');
         const btn       = document.getElementById('btnSimpan');
 
@@ -86,12 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // ===== BUKA MODAL EXPORT =====
     window.bukaModalExport = function () {
         const modal = new bootstrap.Modal(document.getElementById('modalExport'));
-        // Sync kelas dari filter
-        const currentKelas = document.querySelector('select[name="kelas"]')?.value;
-        if (currentKelas) {
-            const exportKelas = document.getElementById('exportKelas');
-            if (exportKelas) exportKelas.value = currentKelas;
-        }
         updatePeriodeInfo();
         modal.show();
     };
@@ -130,14 +124,23 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ===== EXPORT PDF =====
-    window.exportPDF = async function () {
-        const kelas   = document.getElementById('exportKelas')?.value;
+        window.exportPDF = async function () {
+
+        const kelas   = document.getElementById('exportKelas')?.value?.trim();
+        console.log('KELAS =', kelas);
         const tanggal = document.getElementById('exportTanggal')?.value;
         const filter  = document.getElementById('exportFilter')?.value;
         const btn     = document.getElementById('btnExport');
 
-        if (!kelas)   { showToast('⚠ Pilih kelas terlebih dahulu!', 'error'); return; }
-        if (!tanggal) { showToast('⚠ Pilih tanggal terlebih dahulu!', 'error'); return; }
+        if (!kelas) {
+            showToast('❌ Kelas tidak ditemukan!', 'error');
+            return;
+        }
+
+        if (!tanggal) {
+            showToast('⚠ Pilih tanggal terlebih dahulu!', 'error');
+            return;
+        }
 
         if (cfg.kelasGuru?.length > 0 && !cfg.kelasGuru.includes(kelas)) {
             showToast('❌ Anda hanya bisa export kelas yang Anda ajar!', 'error');

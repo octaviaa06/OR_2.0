@@ -112,8 +112,8 @@
             </a>
         </li>
 
-        {{-- Perizinan --}}
-
+        {{-- Kalender --}}
+    </ul>
 
     {{-- ===== FILLER ILLUSTRATION AREA ===== --}}
     <div class="sidebar-filler">
@@ -159,7 +159,7 @@
             </div>
             <div class="user-info">
                 <span class="user-name">{{ session('username') ?? 'Admin' }}</span>
-                <span class="user-role">Administrator</span>
+                <span class="user-role">Guru</span>
             </div>
         </div>
     </div>
