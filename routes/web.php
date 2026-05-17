@@ -87,23 +87,13 @@ Route::middleware(['auth.check', 'role:guru'])->prefix('guru')->name('guru.')->g
     Route::post('/absensi/export', [GuruAbsensiController::class, 'exportData'])->name('absensi.export');
 
     // Perizinan
-    Route::get('/izin',                [GuruPerizinanController::class, 'index'])->name('izin.index');
-    Route::put('/izin/update-status',  [GuruPerizinanController::class, 'updateStatus'])->name('izin.update.status');
-        // Kalender
-// Kalender
-// Kalender
-Route::get('/kalender', [GuruKalenderController::class, 'index'])
-    ->name('kalender.index');
+    Route::get('/izin',               [GuruPerizinanController::class, 'index'])->name('izin.index');
+    Route::put('/izin/update-status', [GuruPerizinanController::class, 'updateStatus'])->name('izin.update.status');
 
-Route::post('/kalender/store', [GuruKalenderController::class, 'store'])
-    ->name('kalender.store');
-
-Route::put('/kalender/update/{id}', [GuruKalenderController::class, 'update'])
-    ->name('kalender.update');
-
-Route::delete('/kalender/destroy', [GuruKalenderController::class, 'destroy'])
-    ->name('kalender.destroy');
-
-Route::get('/kalender/show', [GuruKalenderController::class, 'show'])
-    ->name('kalender.show');
+    // Kalender
+    Route::get('/kalender',          [GuruKalenderController::class, 'index'])->name('kalender.index');
+    Route::post('/kalender/store',   [GuruKalenderController::class, 'store'])->name('kalender.store');
+    Route::put('/kalender/update/{id}', [GuruKalenderController::class, 'update'])->name('kalender.update');
+    Route::delete('/kalender/destroy',  [GuruKalenderController::class, 'destroy'])->name('kalender.destroy');
+    Route::get('/kalender/show',     [GuruKalenderController::class, 'show'])->name('kalender.show');
 });

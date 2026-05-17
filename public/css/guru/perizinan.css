@@ -15,8 +15,24 @@
 body { background: #09090b; color: var(--text-main); font-family: 'Poppins', sans-serif; }
 
 .main-content {
-    min-height: 100vh; padding: 2rem;
-    background: transparent !important; position: relative;
+    margin-left: 260px;
+    min-height: 100vh;
+    padding: 2rem;
+    background: transparent !important;
+    position: relative;
+    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Saat sidebar collapsed */
+body:has(.sidebar.collapsed) .main-content {
+    margin-left: 72px;
+}
+
+/* Mobile */
+@media (max-width: 991px) {
+    .main-content {
+        margin-left: 0 !important;
+    }
 }
 .main-content::before, .main-content::after {
     content: ''; position: fixed; border-radius: 50%;
@@ -253,7 +269,6 @@ body { background: #09090b; color: var(--text-main); font-family: 'Poppins', san
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-    .main-content { padding: 1rem !important; margin-left: 0 !important; }
     .search-wrapper { width: 100%; }
     .perizinan-table th, .perizinan-table td { padding: 10px 10px; font-size: 12.5px; }
 }
